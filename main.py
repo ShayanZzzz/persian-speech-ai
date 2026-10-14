@@ -1,11 +1,12 @@
+
 from fastapi import FastAPI, UploadFile, File, HTTPException
-import whisper
+from src.inference import load_model, transcribe_audio
 import tempfile
 import os
 
 app = FastAPI(title="Farsi Speech AI")
 
-model = whisper.load_model("base")
+model = load_model("base")
 
 
 @app.get("/")
@@ -24,17 +25,21 @@ async def transcribe(file: UploadFile = File(...)):
     path = None
 
     try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        with tempfile.NamedTemporaryFile(
+            delete=False, suffix=suffix
+        ) as tmp:
             path = tmp.name
+
             while chunk := await file.read(1024 * 1024):
                 tmp.write(chunk)
 
-        result = model.transcribe(path, fp16=False)
+        result = transcribe_audio(model, path)
 
         return {
             "filename": file.filename,
-            "text": result["text"].strip(),
-            "language": result["language"]
+            "text": result["text"],
+            "language": result["language"],
+            "segments": result["segments"],
         }
 
     except Exception as e:
@@ -43,3 +48,4 @@ async def transcribe(file: UploadFile = File(...)):
     finally:
         if path and os.path.exists(path):
             os.remove(path)
+        await file.close()
