@@ -6,3 +6,4 @@ jiwer
 librosa
 soundfile
 openai-whisper
+silero-vad
