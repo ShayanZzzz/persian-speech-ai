@@ -4,9 +4,9 @@ import tempfile
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
-from src.auth import register_user
+from src.auth import authenticate_user, create_access_token, register_user
 from src.database import SessionLocal
-from src.schemas import UserRegister
+from src.schemas import UserLogin, UserRegister
 
 from src.inference import load_model, transcribe_audio
 from src.media import convert_to_wav
@@ -46,6 +46,29 @@ def register(payload: UserRegister, db: Session = Depends(get_db)):
         "id": user.id,
         "email": user.email,
         "created_at": user.created_at,
+    }
+
+
+
+@app.post("/login")
+def login(payload: UserLogin, db: Session = Depends(get_db)):
+    user = authenticate_user(
+        db,
+        email=payload.email.lower(),
+        password=payload.password,
+    )
+
+    if user is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid email or password",
+        )
+
+    access_token = create_access_token(user.id)
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
     }
 
 
