@@ -1,17 +1,25 @@
 
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from src.inference import load_model, transcribe_audio
+from src.media import convert_to_wav
 import tempfile
 import os
 
-app = FastAPI(title="Farsi Speech AI")
+app = FastAPI(title="Persian Speech AI")
 
 model = load_model("base")
+
+MAX_FILE_SIZE = 25 * 1024 * 1024  # 25 MB for now
+
+ALLOWED_EXTENSIONS = {
+    ".wav", ".mp3", ".m4a", ".flac", ".ogg", ".webm",
+    ".mp4", ".mkv", ".mov", ".avi", ".mpeg", ".mpg",
+}
 
 
 @app.get("/")
 def home():
-    return {"message": "Farsi Speech AI is running"}
+    return {"message": "Persian Speech AI is running"}
 
 
 @app.get("/health")
@@ -21,31 +29,76 @@ def health():
 
 @app.post("/transcribe")
 async def transcribe(file: UploadFile = File(...)):
-    suffix = os.path.splitext(file.filename or "")[1] or ".audio"
-    path = None
+    filename = file.filename or "upload"
+    extension = os.path.splitext(filename)[1].lower()
+
+    if extension not in ALLOWED_EXTENSIONS:
+        await file.close()
+        raise HTTPException(
+            status_code=400,
+            detail="Unsupported file type.",
+        )
+
+    input_path = None
+    wav_path = None
+    total_size = 0
 
     try:
         with tempfile.NamedTemporaryFile(
-            delete=False, suffix=suffix
+            delete=False,
+            suffix=extension,
         ) as tmp:
-            path = tmp.name
+            input_path = tmp.name
 
-            while chunk := await file.read(1024 * 1024):
+            while True:
+                chunk = await file.read(1024 * 1024)
+
+                if not chunk:
+                    break
+
+                total_size += len(chunk)
+
+                if total_size > MAX_FILE_SIZE:
+                    raise HTTPException(
+                        status_code=413,
+                        detail="File is too large. Maximum size is 25 MB.",
+                    )
+
                 tmp.write(chunk)
 
-        result = transcribe_audio(model, path)
+        if total_size == 0:
+            raise HTTPException(
+                status_code=400,
+                detail="The uploaded file is empty.",
+            )
+
+        wav_path = input_path + ".wav"
+        convert_to_wav(input_path, wav_path)
+
+        result = transcribe_audio(model, wav_path)
 
         return {
-            "filename": file.filename,
+            "filename": filename,
             "text": result["text"],
             "language": result["language"],
             "segments": result["segments"],
         }
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except HTTPException:
+        raise
+
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="Audio processing failed.",
+        )
 
     finally:
-        if path and os.path.exists(path):
-            os.remove(path)
+        for path in (input_path, wav_path):
+            if path and os.path.exists(path):
+                os.remove(path)
+
         await file.close()
