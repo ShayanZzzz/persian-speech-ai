@@ -2,9 +2,10 @@ import os
 import tempfile
 
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
-from src.auth import authenticate_user, create_access_token, register_user
+from src.auth import authenticate_user, create_access_token, get_current_user, register_user
 from src.database import SessionLocal
 from src.schemas import UserLogin, UserRegister
 
@@ -12,6 +13,30 @@ from src.inference import load_model, transcribe_audio
 from src.media import convert_to_wav
 
 app = FastAPI(title="Persian Speech AI")
+
+bearer_scheme = HTTPBearer()
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+def require_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    db: Session = Depends(get_db),
+):
+    try:
+        return get_current_user(credentials.credentials, db)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from exc
+
 
 model = load_model("base")
 
@@ -21,15 +46,6 @@ ALLOWED_EXTENSIONS = {
     ".wav", ".mp3", ".m4a", ".flac", ".ogg", ".webm",
     ".mp4", ".mkv", ".mov", ".avi", ".mpeg", ".mpg",
 }
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
 
 @app.post("/register", status_code=201)
 def register(payload: UserRegister, db: Session = Depends(get_db)):
@@ -83,7 +99,10 @@ def health():
 
 
 @app.post("/transcribe")
-async def transcribe(file: UploadFile = File(...)):
+async def transcribe(
+    file: UploadFile = File(...),
+    current_user=Depends(require_current_user),
+):
     filename = file.filename or "upload"
     extension = os.path.splitext(filename)[1].lower()
 

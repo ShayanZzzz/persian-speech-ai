@@ -63,3 +63,25 @@ def create_access_token(user_id: int) -> str:
     }
 
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def get_current_user(token: str, db: Session) -> User:
+    if not SECRET_KEY:
+        raise RuntimeError("SECRET_KEY is not set in .env")
+
+    try:
+        payload = jwt.decode(
+            token,
+            SECRET_KEY,
+            algorithms=[ALGORITHM],
+        )
+        user_id = int(payload["sub"])
+    except (jwt.InvalidTokenError, KeyError, TypeError, ValueError) as exc:
+        raise ValueError("Invalid or expired token") from exc
+
+    user = db.get(User, user_id)
+
+    if user is None:
+        raise ValueError("User not found")
+
+    return user
