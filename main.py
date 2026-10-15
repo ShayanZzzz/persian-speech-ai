@@ -1,7 +1,12 @@
 import os
 import tempfile
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
+from sqlalchemy.orm import Session
+
+from src.auth import register_user
+from src.database import SessionLocal
+from src.schemas import UserRegister
 
 from src.inference import load_model, transcribe_audio
 from src.media import convert_to_wav
@@ -16,6 +21,32 @@ ALLOWED_EXTENSIONS = {
     ".wav", ".mp3", ".m4a", ".flac", ".ogg", ".webm",
     ".mp4", ".mkv", ".mov", ".avi", ".mpeg", ".mpg",
 }
+
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+@app.post("/register", status_code=201)
+def register(payload: UserRegister, db: Session = Depends(get_db)):
+    try:
+        user = register_user(
+            db,
+            email=payload.email.lower(),
+            password=payload.password,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    return {
+        "id": user.id,
+        "email": user.email,
+        "created_at": user.created_at,
+    }
 
 
 @app.get("/")
