@@ -1,15 +1,16 @@
+import os
+import tempfile
 
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, File, HTTPException, UploadFile
+
 from src.inference import load_model, transcribe_audio
 from src.media import convert_to_wav
-import tempfile
-import os
 
 app = FastAPI(title="Persian Speech AI")
 
 model = load_model("base")
 
-MAX_FILE_SIZE = 25 * 1024 * 1024  # 25 MB for now
+MAX_FILE_SIZE = 25 * 1024 * 1024
 
 ALLOWED_EXTENSIONS = {
     ".wav", ".mp3", ".m4a", ".flac", ".ogg", ".webm",
@@ -51,12 +52,12 @@ async def transcribe(file: UploadFile = File(...)):
             input_path = tmp.name
 
             while True:
-                chunk = await file.read(1024 * 1024)
+                data = await file.read(1024 * 1024)
 
-                if not chunk:
+                if not data:
                     break
 
-                total_size += len(chunk)
+                total_size += len(data)
 
                 if total_size > MAX_FILE_SIZE:
                     raise HTTPException(
@@ -64,7 +65,7 @@ async def transcribe(file: UploadFile = File(...)):
                         detail="File is too large. Maximum size is 25 MB.",
                     )
 
-                tmp.write(chunk)
+                tmp.write(data)
 
         if total_size == 0:
             raise HTTPException(
@@ -88,17 +89,29 @@ async def transcribe(file: UploadFile = File(...)):
         raise
 
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        ) from exc
 
-    except Exception:
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Audio processing service is not configured correctly.",
+        ) from exc
+
+    except Exception as exc:
         raise HTTPException(
             status_code=500,
             detail="Audio processing failed.",
-        )
+        ) from exc
 
     finally:
         for path in (input_path, wav_path):
             if path and os.path.exists(path):
-                os.remove(path)
+                try:
+                    os.remove(path)
+                except OSError:
+                    pass
 
         await file.close()
