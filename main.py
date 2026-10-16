@@ -98,6 +98,15 @@ def health():
     return {"status": "ok"}
 
 
+@app.get("/me")
+def get_me(current_user=Depends(require_current_user)):
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "created_at": current_user.created_at,
+    }
+
+
 @app.post("/transcribe")
 async def transcribe(
     file: UploadFile = File(...),
