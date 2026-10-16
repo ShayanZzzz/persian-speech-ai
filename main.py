@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from src.auth import authenticate_user, create_access_token, get_current_user, register_user
 from src.database import SessionLocal
 from src.schemas import UserLogin, UserRegister
+from src.models import TranscriptionHistory
 
 from src.inference import load_model, transcribe_audio
 from src.media import convert_to_wav
@@ -107,10 +108,36 @@ def get_me(current_user=Depends(require_current_user)):
     }
 
 
+@app.get("/history")
+def get_history(
+    current_user=Depends(require_current_user),
+    db: Session = Depends(get_db),
+):
+    records = (
+        db.query(TranscriptionHistory)
+        .filter(TranscriptionHistory.user_id == current_user.id)
+        .order_by(TranscriptionHistory.id.desc())
+        .limit(50)
+        .all()
+    )
+
+    return [
+        {
+            "id": record.id,
+            "filename": record.filename,
+            "language": record.language,
+            "text": record.text,
+            "created_at": record.created_at,
+        }
+        for record in records
+    ]
+
+
 @app.post("/transcribe")
 async def transcribe(
     file: UploadFile = File(...),
     current_user=Depends(require_current_user),
+    db: Session = Depends(get_db),
 ):
     filename = file.filename or "upload"
     extension = os.path.splitext(filename)[1].lower()
@@ -160,6 +187,16 @@ async def transcribe(
 
         result = transcribe_audio(model, wav_path)
 
+        history = TranscriptionHistory(
+            user_id=current_user.id,
+            filename=filename,
+            language=result["language"],
+            text=result["text"],
+        )
+        db.add(history)
+        db.commit()
+        db.refresh(history)
+
         return {
             "filename": filename,
             "text": result["text"],
@@ -183,6 +220,7 @@ async def transcribe(
         ) from exc
 
     except Exception as exc:
+        db.rollback()
         raise HTTPException(
             status_code=500,
             detail="Audio processing failed.",
