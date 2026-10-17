@@ -1,21 +1,39 @@
+
 import os
 import tempfile
+from pathlib import Path
 
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
+from fastapi.responses import FileResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
-from src.auth import authenticate_user, create_access_token, get_current_user, register_user
+from src.auth import (
+    authenticate_user,
+    create_access_token,
+    get_current_user,
+    register_user,
+)
 from src.database import SessionLocal
 from src.schemas import UserLogin, UserRegister
 from src.models import TranscriptionHistory
-
 from src.inference import load_model, transcribe_audio
 from src.media import convert_to_wav
 
+
 app = FastAPI(title="Persian Speech AI")
 
+STATIC_DIR = Path(__file__).parent / "static"
+
+app.mount(
+    "/static",
+    StaticFiles(directory=STATIC_DIR),
+    name="static",
+)
+
 bearer_scheme = HTTPBearer()
+
 
 def get_db():
     db = SessionLocal()
@@ -48,6 +66,17 @@ ALLOWED_EXTENSIONS = {
     ".mp4", ".mkv", ".mov", ".avi", ".mpeg", ".mpg",
 }
 
+
+@app.get("/", include_in_schema=False)
+def home():
+    return FileResponse(STATIC_DIR / "index.html")
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
 @app.post("/register", status_code=201)
 def register(payload: UserRegister, db: Session = Depends(get_db)):
     try:
@@ -64,7 +93,6 @@ def register(payload: UserRegister, db: Session = Depends(get_db)):
         "email": user.email,
         "created_at": user.created_at,
     }
-
 
 
 @app.post("/login")
@@ -87,16 +115,6 @@ def login(payload: UserLogin, db: Session = Depends(get_db)):
         "access_token": access_token,
         "token_type": "bearer",
     }
-
-
-@app.get("/")
-def home():
-    return {"message": "Persian Speech AI is running"}
-
-
-@app.get("/health")
-def health():
-    return {"status": "ok"}
 
 
 @app.get("/me")
