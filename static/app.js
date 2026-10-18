@@ -9,8 +9,9 @@ let token = localStorage.getItem("psai_token") || "";
 function setMessage(id, text, type = "") {
   const el = $(id);
   if (!el) return;
+
   el.textContent = text;
-  el.className = `message ${type}`;
+  el.className = `message ${type}`.trim();
 }
 
 async function request(path, options = {}) {
@@ -35,10 +36,25 @@ async function request(path, options = {}) {
         : Array.isArray(detail)
           ? detail.map((item) => item.msg).join("، ")
           : "درخواست ناموفق بود.";
+
     throw new Error(message);
   }
 
   return data;
+}
+
+function updateResultButtons() {
+  const hasText = Boolean($("transcript").value.trim());
+
+  $("copy-btn").disabled = !hasText;
+  $("download-btn").disabled = !hasText;
+}
+
+function clearResult() {
+  $("transcript").value = "";
+  $("result-meta").textContent = "";
+  $("result-meta").classList.add("hidden");
+  updateResultButtons();
 }
 
 function showAuthenticatedUI(email = "") {
@@ -60,8 +76,18 @@ function setAuthMode(mode) {
 
   $("login-tab").classList.toggle("active", mode === "login");
   $("register-tab").classList.toggle("active", mode === "register");
+
+  $("login-tab").setAttribute(
+    "aria-selected",
+    String(mode === "login")
+  );
+  $("register-tab").setAttribute(
+    "aria-selected",
+    String(mode === "register")
+  );
+
   $("auth-submit").textContent =
-    mode === "login" ? "ورود" : "ساخت حساب کاربری";
+    mode === "login" ? "ورود به حساب" : "ساخت حساب کاربری";
 
   $("password").autocomplete =
     mode === "login" ? "current-password" : "new-password";
@@ -76,14 +102,14 @@ $("auth-form").addEventListener("submit", async (event) => {
   event.preventDefault();
 
   const button = $("auth-submit");
+  const email = $("email").value.trim().toLowerCase();
+  const password = $("password").value;
+
   button.disabled = true;
   button.textContent = "لطفاً صبر کن...";
   setMessage("auth-message", "");
 
   try {
-    const email = $("email").value.trim().toLowerCase();
-    const password = $("password").value;
-
     const data = await request(
       authMode === "login" ? "/login" : "/register",
       {
@@ -118,46 +144,60 @@ $("auth-form").addEventListener("submit", async (event) => {
   } finally {
     button.disabled = false;
     button.textContent =
-      authMode === "login" ? "ورود" : "ساخت حساب کاربری";
+      authMode === "login" ? "ورود به حساب" : "ساخت حساب کاربری";
   }
 });
 
 $("logout-btn").addEventListener("click", () => {
   token = "";
   localStorage.removeItem("psai_token");
-  $("transcript").value = "";
-  $("result-meta").classList.add("hidden");
-  $("copy-btn").disabled = true;
+
+  clearResult();
+  $("audio-file").value = "";
+  $("file-label").textContent = "فایل را برای شروع انتخاب کن";
+  setMessage("upload-message", "");
+  setMessage("global-message", "");
+
   showLoggedOutUI();
   setMessage("auth-message", "از حساب خارج شدی.", "success");
 });
 
 $("audio-file").addEventListener("change", () => {
   const file = $("audio-file").files[0];
+
   $("file-label").textContent = file
     ? file.name
-    : "برای انتخاب فایل کلیک کن";
+    : "فایل را برای شروع انتخاب کن";
+
   setMessage("upload-message", "");
 });
+
+$("transcript").addEventListener("input", updateResultButtons);
 
 $("upload-form").addEventListener("submit", async (event) => {
   event.preventDefault();
 
   const file = $("audio-file").files[0];
+
   if (!file) {
     setMessage("upload-message", "اول یک فایل انتخاب کن.", "error");
     return;
   }
 
   if (file.size > 25 * 1024 * 1024) {
-    setMessage("upload-message", "حجم فایل نباید بیشتر از ۲۵ مگابایت باشد.", "error");
+    setMessage(
+      "upload-message",
+      "حجم فایل نباید بیشتر از ۲۵ مگابایت باشد.",
+      "error"
+    );
     return;
   }
 
   const button = $("transcribe-btn");
   button.disabled = true;
   button.textContent = "در حال پردازش فایل...";
-  setMessage("upload-message", "ممکن است پردازش کمی طول بکشد.");
+  setMessage("upload-message", "فایل در حال پردازش است؛ ممکن است کمی طول بکشد.");
+  setMessage("global-message", "");
 
   try {
     const formData = new FormData();
@@ -169,36 +209,77 @@ $("upload-form").addEventListener("submit", async (event) => {
     });
 
     $("transcript").value = data.text || "";
-    $("copy-btn").disabled = !data.text;
 
     $("result-meta").textContent =
       `فایل: ${data.filename || file.name} · زبان تشخیص‌داده‌شده: ${data.language || "نامشخص"}`;
 
     $("result-meta").classList.remove("hidden");
+    updateResultButtons();
 
     setMessage("upload-message", "تبدیل با موفقیت انجام شد.", "success");
+
     await loadHistory();
   } catch (error) {
     setMessage("upload-message", error.message, "error");
   } finally {
     button.disabled = false;
-    button.textContent = "تبدیل به متن";
+    button.innerHTML = '<span>تبدیل به متن</span><span aria-hidden="true">←</span>';
   }
 });
 
 $("copy-btn").addEventListener("click", async () => {
+  const text = $("transcript").value;
+
+  if (!text.trim()) return;
+
   try {
-    await navigator.clipboard.writeText($("transcript").value);
+    await navigator.clipboard.writeText(text);
     setMessage("global-message", "متن کپی شد.", "success");
   } catch {
-    setMessage("global-message", "کپی خودکار انجام نشد؛ متن را دستی انتخاب کن.", "error");
+    $("transcript").focus();
+    $("transcript").select();
+    setMessage(
+      "global-message",
+      "کپی خودکار انجام نشد؛ متن انتخاب شد تا دستی کپی کنی.",
+      "error"
+    );
   }
+});
+
+$("download-btn").addEventListener("click", () => {
+  const text = $("transcript").value;
+
+  if (!text.trim()) return;
+
+  const blob = new Blob(["\uFEFF", text], {
+    type: "text/plain;charset=utf-8",
+  });
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  const filename =
+    $("audio-file").files[0]?.name.replace(/\.[^.]+$/, "") ||
+    "transcription";
+
+  link.href = url;
+  link.download = `${filename}.txt`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+
+  URL.revokeObjectURL(url);
+
+  setMessage("global-message", "دانلود فایل متنی شروع شد.", "success");
 });
 
 function formatDate(value) {
   if (!value) return "";
+
   const date = new Date(value);
+
   if (Number.isNaN(date.getTime())) return "";
+
   return date.toLocaleString("fa-IR");
 }
 
@@ -234,14 +315,21 @@ function renderHistory(items) {
     const openButton = document.createElement("button");
     openButton.className = "button secondary history-open";
     openButton.textContent = "مشاهده متن";
+    openButton.type = "button";
 
     openButton.addEventListener("click", () => {
       $("transcript").value = item.text || "";
-      $("copy-btn").disabled = !item.text;
+
       $("result-meta").textContent =
         `فایل: ${item.filename || ""} · زبان: ${item.language || "نامشخص"}`;
+
       $("result-meta").classList.remove("hidden");
-      $("transcript").scrollIntoView({ behavior: "smooth", block: "center" });
+      updateResultButtons();
+
+      $("transcript").scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
     });
 
     row.append(info, openButton);
@@ -254,13 +342,19 @@ async function loadHistory() {
     const data = await request("/history");
     renderHistory(Array.isArray(data) ? data : data.items || []);
   } catch (error) {
-    setMessage("global-message", `دریافت تاریخچه ناموفق بود: ${error.message}`, "error");
+    setMessage(
+      "global-message",
+      `دریافت تاریخچه ناموفق بود: ${error.message}`,
+      "error"
+    );
   }
 }
 
 $("refresh-history").addEventListener("click", loadHistory);
 
 async function initialize() {
+  updateResultButtons();
+
   if (!token) {
     showLoggedOutUI();
     return;

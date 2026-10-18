@@ -1,108 +1,234 @@
+
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Persian Speech AI</title>
+  <meta name="theme-color" content="#090b12">
+  <meta name="description" content="تبدیل فایل‌های صوتی و ویدیویی به متن با Persian Speech AI">
+  <title>Persian Speech AI — تبدیل گفتار به متن</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-  <header class="topbar">
-    <a class="brand" href="/">
-      <span class="brand-icon">P</span>
-      <span>Persian Speech AI</span>
-    </a>
-    <div class="top-actions">
-      <span id="user-email"></span>
-      <button id="logout-btn" class="button secondary hidden">خروج</button>
-    </div>
-  </header>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="صفحه اصلی Persian Speech AI">
+        <span class="brand-icon" aria-hidden="true">P</span>
+        <span class="brand-copy">
+          <span class="brand-name">Persian Speech AI</span>
+          <span class="brand-caption">SPEECH INTELLIGENCE</span>
+        </span>
+      </a>
 
-  <main class="container">
-    <section id="auth-section" class="auth-card">
-      <div class="eyebrow">PERSIAN SPEECH AI</div>
-      <h1>صدا را به متن تبدیل کن.</h1>
-      <p class="muted">وارد حساب شو یا یک حساب جدید بساز.</p>
-
-      <div class="tabs">
-        <button id="login-tab" class="tab active">ورود</button>
-        <button id="register-tab" class="tab">ثبت‌نام</button>
+      <div class="top-actions">
+        <span id="user-email" class="user-email"></span>
+        <button id="logout-btn" class="button secondary hidden" type="button">
+          خروج از حساب
+        </button>
       </div>
+    </header>
 
-      <form id="auth-form">
-        <label for="email">ایمیل</label>
-        <input id="email" type="email" placeholder="you@example.com" required>
-
-        <label for="password">رمز عبور</label>
-        <input id="password" type="password" placeholder="حداقل ۸ کاراکتر" minlength="8" required>
-
-        <button id="auth-submit" class="button primary full" type="submit">ورود</button>
-      </form>
-      <p id="auth-message" class="message"></p>
-    </section>
-
-    <section id="app-section" class="hidden">
-      <div class="welcome">
-        <div>
-          <div class="eyebrow">WORKSPACE</div>
-          <h1>تبدیل گفتار به متن</h1>
-          <p class="muted">فایل صوتی یا ویدیویی خودت را بارگذاری کن.</p>
+    <main class="container">
+      <section id="auth-section" class="auth-card">
+        <div class="auth-visual" aria-hidden="true">
+          <div class="auth-orbit orbit-one"></div>
+          <div class="auth-orbit orbit-two"></div>
+          <div class="auth-core">P</div>
+          <span class="auth-signal signal-one"></span>
+          <span class="auth-signal signal-two"></span>
+          <span class="auth-signal signal-three"></span>
         </div>
-        <span class="status"><span class="status-dot"></span> سرویس آماده</span>
-      </div>
 
-      <div class="workspace">
-        <section class="panel upload-panel">
-          <h2>فایل جدید</h2>
-          <p class="muted">فایل صوتی یا ویدیویی را انتخاب کن.</p>
+        <div class="eyebrow">PERSIAN SPEECH AI</div>
+        <h1>صدا، به زبان متن.</h1>
+        <p class="muted">گفتار خودت را به متن تبدیل کن؛ ساده، سریع و دقیق.</p>
 
-          <form id="upload-form">
-            <label class="dropzone" for="audio-file">
-              <span class="upload-icon">↑</span>
-              <strong id="file-label">برای انتخاب فایل کلیک کن</strong>
-              <span class="muted small">حداکثر حجم: ۲۵ مگابایت</span>
-              <input id="audio-file" type="file"
-                accept="audio/*,video/*,.mp3,.wav,.m4a,.mp4,.webm,.mpeg,.mpga"
-                required>
-            </label>
-            <button id="transcribe-btn" class="button primary full" type="submit">
-              تبدیل به متن
-            </button>
-          </form>
-          <p id="upload-message" class="message"></p>
-        </section>
-
-        <section class="panel result-panel">
-          <div class="section-heading">
-            <div>
-              <h2>متن خروجی</h2>
-              <p class="muted small">نتیجه تبدیل در این بخش نمایش داده می‌شود.</p>
-            </div>
-            <button id="copy-btn" class="button secondary" disabled>کپی متن</button>
-          </div>
-          <div id="result-meta" class="result-meta hidden"></div>
-          <textarea id="transcript" placeholder="متن تبدیل‌شده اینجا نمایش داده می‌شود..." readonly></textarea>
-        </section>
-      </div>
-
-      <section class="panel history-panel">
-        <div class="section-heading">
-          <div>
-            <h2>تاریخچه تبدیل‌ها</h2>
-            <p class="muted small">آخرین فایل‌هایی که پردازش کرده‌ای.</p>
-          </div>
-          <button id="refresh-history" class="button secondary">بروزرسانی</button>
+        <div class="auth-benefits">
+          <span><span class="benefit-check">✓</span> پشتیبانی از فایل صوتی و ویدیویی</span>
+          <span><span class="benefit-check">✓</span> ذخیره تاریخچه تبدیل‌ها</span>
         </div>
-        <div id="history-list">
-          <p class="muted">برای مشاهده تاریخچه وارد حساب شو.</p>
+
+        <div class="tabs" role="tablist" aria-label="ورود یا ثبت‌نام">
+          <button id="login-tab" class="tab active" type="button" role="tab" aria-selected="true">
+            ورود
+          </button>
+          <button id="register-tab" class="tab" type="button" role="tab" aria-selected="false">
+            ساخت حساب
+          </button>
         </div>
+
+        <form id="auth-form">
+          <label for="email">آدرس ایمیل</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            placeholder="you@example.com"
+            autocomplete="email"
+            dir="ltr"
+            required
+          >
+
+          <label for="password">رمز عبور</label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            placeholder="رمز عبور حساب"
+            autocomplete="current-password"
+            minlength="8"
+            required
+          >
+
+          <button id="auth-submit" class="button primary full" type="submit">
+            ورود به حساب
+            <span aria-hidden="true">←</span>
+          </button>
+        </form>
+
+        <p id="auth-message" class="message" role="status" aria-live="polite"></p>
+        <p class="auth-footnote">فضای شخصی تو برای کار با گفتار و متن</p>
       </section>
-    </section>
 
-    <p id="global-message" class="message"></p>
-  </main>
+      <section id="app-section" class="hidden">
+        <section class="welcome">
+          <div class="welcome-copy">
+            <div class="eyebrow">WORKSPACE / TRANSCRIPTION</div>
+            <h1>سلام، آماده‌ی تبدیل هستی؟</h1>
+            <p class="muted">فایل را انتخاب کن و متن قابل استفاده‌ات را تحویل بگیر.</p>
+          </div>
 
-  <footer>Persian Speech AI <span>·</span> تبدیل گفتار به متن</footer>
+          <div class="service-badge">
+            <span class="status-dot"></span>
+            <span>سرویس آماده</span>
+          </div>
+        </section>
+
+        <section class="workspace">
+          <section class="panel upload-panel">
+            <div class="panel-heading">
+              <div class="panel-heading-icon" aria-hidden="true">↥</div>
+              <div>
+                <h2>فایل جدید</h2>
+                <p class="muted small">از صوت تا متن، در یک مرحله</p>
+              </div>
+            </div>
+
+            <form id="upload-form">
+              <label class="dropzone" for="audio-file">
+                <span class="upload-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 16V4"></path>
+                    <path d="m7 9 5-5 5 5"></path>
+                    <path d="M5 15v4a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-4"></path>
+                  </svg>
+                </span>
+                <strong id="file-label">فایل را برای شروع انتخاب کن</strong>
+                <span class="muted small">صوت یا ویدیو · حداکثر ۲۵ مگابایت</span>
+                <span class="file-formats">MP3 · WAV · M4A · MP4 · WEBM</span>
+                <input
+                  id="audio-file"
+                  name="file"
+                  type="file"
+                  accept="audio/*,video/*,.mp3,.wav,.m4a,.mp4,.webm,.mpeg,.mpga,.flac,.ogg,.mkv,.mov,.avi,.mpg"
+                  required
+                >
+              </label>
+
+              <div class="upload-note">
+                <span aria-hidden="true">ⓘ</span>
+                <span>برای نتیجه بهتر، از فایل صوتی واضح استفاده کن.</span>
+              </div>
+
+              <button id="transcribe-btn" class="button primary full" type="submit">
+                <span>تبدیل به متن</span>
+                <span aria-hidden="true">←</span>
+              </button>
+            </form>
+
+            <p id="upload-message" class="message" role="status" aria-live="polite"></p>
+          </section>
+
+          <section class="panel result-panel">
+            <div class="section-heading">
+              <div class="panel-heading">
+                <div class="panel-heading-icon result-icon" aria-hidden="true">Aa</div>
+                <div>
+                  <h2>متن خروجی</h2>
+                  <p class="muted small">متن تبدیل‌شده را اینجا ببین و ویرایش کن.</p>
+                </div>
+              </div>
+
+              <div class="result-actions">
+                <button id="download-btn" class="button secondary" type="button" disabled>
+                  دانلود TXT
+                </button>
+                <button id="copy-btn" class="button secondary" type="button" disabled>
+                  کپی متن
+                </button>
+              </div>
+            </div>
+
+            <div id="result-meta" class="result-meta hidden"></div>
+
+            <div class="transcript-wrap">
+              <textarea
+                id="transcript"
+                placeholder="بعد از پردازش فایل، متن اینجا نمایش داده می‌شود..."
+                aria-label="متن تبدیل‌شده"
+                spellcheck="false"
+              ></textarea>
+            </div>
+
+            <div class="result-footer">
+              <span class="muted small">متن خروجی قابل انتخاب و کپی است.</span>
+              <span class="result-mark">
+                <span class="status-dot"></span>
+                نتیجه پردازش
+              </span>
+            </div>
+          </section>
+        </section>
+
+        <section class="panel history-panel">
+          <div class="section-heading">
+            <div class="panel-heading">
+              <div class="panel-heading-icon history-icon" aria-hidden="true">↺</div>
+              <div>
+                <h2>تاریخچه تبدیل‌ها</h2>
+                <p class="muted small">به فایل‌ها و نتایج قبلی خودت دسترسی داشته باش.</p>
+              </div>
+            </div>
+
+            <button id="refresh-history" class="button secondary" type="button">
+              <span aria-hidden="true">↻</span>
+              بروزرسانی
+            </button>
+          </div>
+
+          <div id="history-list" class="history-list" aria-live="polite">
+            <p class="muted">برای مشاهده تاریخچه وارد حساب شو.</p>
+          </div>
+        </section>
+
+        <p id="global-message" class="message" role="status" aria-live="polite"></p>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-brand">
+        <span class="footer-mark">P</span>
+        <span>Persian Speech AI</span>
+      </div>
+      <span class="footer-description">ساخته‌شده برای تبدیل گفتار به متن</span>
+      <span class="footer-version">EARLY ACCESS</span>
+    </footer>
+  </div>
+
   <script src="/static/app.js"></script>
 </body>
 </html>
