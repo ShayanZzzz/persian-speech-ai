@@ -1,0 +1,532 @@
+.media-studio {
+  --ms-bg: #f5f5ef;
+  --ms-ink: #202820;
+  --ms-muted: #777e74;
+  --ms-line: #dedfd5;
+  --ms-accent: #c9f36b;
+
+  min-height: 100vh;
+  background: var(--ms-bg);
+  color: var(--ms-ink);
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.media-studio * {
+  box-sizing: border-box;
+}
+
+.media-studio a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.ms-header {
+  min-height: 76px;
+  padding: 0 6%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  border-bottom: 1px solid var(--ms-line);
+}
+
+.ms-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.ms-brand-mark {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--ms-ink);
+  color: var(--ms-bg);
+  font-size: 16px;
+  letter-spacing: -0.06em;
+}
+
+.ms-brand-mark span {
+  color: var(--ms-accent);
+}
+
+.ms-muted {
+  color: var(--ms-muted);
+  font-weight: 500;
+}
+
+.ms-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--ms-muted);
+  font-size: 12px;
+}
+
+.ms-nav a {
+  color: var(--ms-ink);
+}
+
+.ms-signin {
+  display: inline-flex;
+  align-items: center;
+  gap: 15px;
+  padding: 10px 14px;
+  border: 1px solid var(--ms-line);
+  border-radius: 5px;
+  font-size: 12px;
+}
+
+.ms-hero {
+  padding: clamp(75px, 11vw, 130px) 24px 35px;
+  text-align: center;
+}
+
+.ms-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--ms-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.ms-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #729e38;
+}
+
+.ms-hero h1 {
+  margin: 24px 0 19px;
+  font-size: clamp(54px, 8.5vw, 96px);
+  line-height: 0.94;
+  letter-spacing: -0.08em;
+  font-weight: 600;
+}
+
+.ms-hero h1 span {
+  color: #72874e;
+}
+
+.ms-hero > p {
+  color: #646c62;
+  font-size: 15px;
+  line-height: 1.9;
+}
+
+.ms-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 27px;
+  margin-top: 20px;
+  padding: 16px 20px;
+  border-radius: 5px;
+  background: var(--ms-ink);
+  color: white !important;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background 160ms ease, transform 160ms ease;
+}
+
+.ms-cta:hover {
+  background: #354335;
+  transform: translateY(-1px);
+}
+
+.ms-cta span {
+  color: var(--ms-accent);
+  font-size: 17px;
+}
+
+.ms-hero-note {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  width: min(100%, 1000px);
+  margin: 105px auto 0;
+  padding-bottom: 17px;
+  border-bottom: 1px solid var(--ms-line);
+  color: #898e84;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+}
+
+.ms-tools {
+  width: min(100% - 48px, 1000px);
+  margin: 0 auto;
+  padding: 70px 0 90px;
+}
+
+.ms-section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 25px;
+  margin-bottom: 28px;
+}
+
+.ms-section-label {
+  color: var(--ms-muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+}
+
+.ms-section-heading h2,
+.ms-free h2 {
+  margin: 13px 0 0;
+  font-size: clamp(28px, 4vw, 43px);
+  line-height: 1.1;
+  letter-spacing: -0.06em;
+  font-weight: 600;
+}
+
+.ms-section-heading > p {
+  max-width: 240px;
+  margin: 0 0 3px;
+  color: var(--ms-muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.ms-tool-list {
+  border-top: 1px solid var(--ms-line);
+}
+
+.ms-tool {
+  display: grid;
+  grid-template-columns: 36px 62px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  padding: 25px 5px;
+  border-bottom: 1px solid var(--ms-line);
+  transition: padding 180ms ease, background 180ms ease;
+}
+
+.ms-tool:hover {
+  padding-right: 13px;
+  padding-left: 13px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.ms-tool-number {
+  align-self: start;
+  padding-top: 7px;
+  color: #92978d;
+  font-size: 10px;
+}
+
+.ms-tool-symbol {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border: 1px solid var(--ms-line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.55);
+  font-size: 26px;
+}
+
+.ms-tool-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+  min-width: 0;
+}
+
+.ms-tool-subtitle {
+  color: var(--ms-muted);
+  font-size: 10px;
+}
+
+.ms-tool-content strong {
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+}
+
+.ms-tool-description {
+  color: #72796e;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.ms-tool-end {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.ms-tool-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #858a80;
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.ms-tool-status > span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #b9bcb3;
+}
+
+.ms-tool-status.is-available > span {
+  background: #729e38;
+}
+
+.ms-tool-arrow {
+  font-size: 20px;
+  transition: transform 160ms ease;
+}
+
+.ms-tool:hover .ms-tool-arrow {
+  transform: translate(3px, -3px);
+}
+
+.ms-free {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 30px;
+  width: min(100% - 48px, 1000px);
+  margin: 0 auto 85px;
+  padding: 35px;
+  border-radius: 10px;
+  background: #e8eddf;
+}
+
+.ms-free > div {
+  max-width: 600px;
+}
+
+.ms-free h2 {
+  font-size: clamp(25px, 3.5vw, 36px);
+}
+
+.ms-free p {
+  max-width: 550px;
+  margin: 13px 0 0;
+  color: #626b5e;
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+.ms-free-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 22px;
+  flex: 0 0 auto;
+  padding: 14px 17px;
+  border: 1px solid #c8d0bd;
+  border-radius: 5px;
+  font-size: 12px;
+}
+
+.ms-free-link span {
+  font-size: 17px;
+}
+
+.ms-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 6%;
+  border-top: 1px solid var(--ms-line);
+  color: #858a80;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+
+.ms-footer .ms-brand {
+  color: var(--ms-ink);
+  letter-spacing: 0.08em;
+}
+
+@media (max-width: 650px) {
+  .ms-header {
+    min-height: 66px;
+    padding: 0 18px;
+  }
+
+  .ms-nav {
+    display: none;
+  }
+
+  .ms-hero {
+    padding-top: 75px;
+  }
+
+  .ms-hero h1 {
+    font-size: clamp(54px, 13vw, 76px);
+  }
+
+  .ms-hero-note {
+    margin-top: 75px;
+    font-size: 8px;
+  }
+
+  .ms-tools {
+    width: calc(100% - 36px);
+    padding: 55px 0 65px;
+  }
+
+  .ms-section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .ms-tool {
+    grid-template-columns: 24px 44px minmax(0, 1fr) 20px;
+    gap: 10px;
+    padding: 20px 0;
+  }
+
+  .ms-tool-symbol {
+    width: 42px;
+    height: 42px;
+    font-size: 21px;
+  }
+
+  .ms-tool-content strong {
+    font-size: 18px;
+  }
+
+  .ms-tool-description {
+    font-size: 11px;
+  }
+
+  .ms-tool-end {
+    justify-content: end;
+  }
+
+  .ms-tool-status {
+    display: none;
+  }
+
+  .ms-free {
+    align-items: flex-start;
+    flex-direction: column;
+    width: calc(100% - 36px);
+    margin-bottom: 55px;
+    padding: 24px;
+  }
+
+  .ms-footer {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 22px 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .media-studio *,
+  .media-studio *::before,
+  .media-studio *::after {
+    transition: none !important;
+  }
+}
+
+/* Persian typography and RTL layout */
+.media-studio.ms-fa {
+  font-family: Tahoma, "Segoe UI", sans-serif;
+  line-height: 1.8;
+}
+
+.media-studio.ms-fa .ms-hero h1 {
+  line-height: 1.45;
+  letter-spacing: 0;
+  font-weight: 700;
+}
+
+.media-studio.ms-fa .ms-section-heading h2,
+.media-studio.ms-fa .ms-free h2,
+.media-studio.ms-fa .ms-tool-content strong {
+  letter-spacing: 0;
+  line-height: 1.65;
+}
+
+.media-studio.ms-fa .ms-eyebrow,
+.media-studio.ms-fa .ms-section-label,
+.media-studio.ms-fa .ms-tool-status,
+.media-studio.ms-fa .ms-hero-note,
+.media-studio.ms-fa .ms-footer {
+  letter-spacing: 0;
+}
+
+.media-studio.ms-fa .ms-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ms-language,
+.negar-language {
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid var(--ms-line, #dedfd5);
+  border-radius: 5px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.media-studio.ms-fa .ms-tool {
+  text-align: right;
+}
+
+.media-studio.ms-fa .ms-tool:hover {
+  padding-right: 13px;
+  padding-left: 13px;
+}
+
+.media-studio.ms-fa .ms-tool-arrow {
+  transform: scaleX(-1);
+}
+
+.media-studio.ms-fa .ms-tool:hover .ms-tool-arrow {
+  transform: scaleX(-1) translate(3px, -3px);
+}
+
+.media-studio.ms-fa .ms-free {
+  text-align: right;
+}
+
+.media-studio.ms-fa .ms-free-link {
+  white-space: nowrap;
+}
+
+.media-studio.ms-fa .ms-footer {
+  letter-spacing: 0;
+}
+
+@media (max-width: 650px) {
+  .media-studio.ms-fa .ms-hero h1 {
+    font-size: clamp(40px, 10vw, 64px);
+  }
+
+  .media-studio.ms-fa .ms-hero-note {
+    gap: 12px;
+    line-height: 1.8;
+  }
+
+  .media-studio.ms-fa .ms-tool {
+    grid-template-columns: 24px 44px minmax(0, 1fr) 20px;
+  }
+}
