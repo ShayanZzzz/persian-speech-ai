@@ -1,3 +1,5 @@
+import hashlib
+import secrets
 from src.api_keys import create_api_key, revoke_api_key
 from src.models import Organization, OrganizationAPIKey
 from pydantic import BaseModel, Field
@@ -5,7 +7,7 @@ import os
 import tempfile
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, HTTPException, Request, Response, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from fastapi.staticfiles import StaticFiles
@@ -18,11 +20,12 @@ from src.auth import (
     register_user,
 )
 from src.database import Base, SessionLocal, engine
-from src.schemas import UserLogin, UserRegister
+from src.schemas import UserLogin, UserRegister, OrganizationCreate, APIKeyCreate
 from src.models import (
     Organization,
     OrganizationAPIKey,
     TranscriptionHistory,
+    GuestUsage,
 )
 from src.inference import load_model, transcribe_audio
 from src.media import convert_to_wav
@@ -42,6 +45,7 @@ app.mount(
 )
 
 bearer_scheme = HTTPBearer()
+optional_bearer_scheme = HTTPBearer(auto_error=False)
 
 MAX_FILE_SIZE = 25 * 1024 * 1024
 
@@ -73,6 +77,22 @@ def require_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
     db: Session = Depends(get_db),
 ):
+    try:
+        return get_current_user(credentials.credentials, db)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from exc
+
+
+def get_optional_current_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(optional_bearer_scheme),
+    db: Session = Depends(get_db),
+):
+    if credentials is None:
+        return None
     try:
         return get_current_user(credentials.credentials, db)
     except ValueError as exc:
@@ -179,10 +199,14 @@ def get_history(
     ]
 
 
+
+
 @app.post("/transcribe")
 async def transcribe(
+    request: Request,
+    response: Response,
     file: UploadFile = File(...),
-    current_user=Depends(require_current_user),
+    current_user=Depends(get_optional_current_user),
     db: Session = Depends(get_db),
 ):
     filename = file.filename or "upload"
@@ -190,10 +214,44 @@ async def transcribe(
 
     if extension not in ALLOWED_EXTENSIONS:
         await file.close()
-        raise HTTPException(
-            status_code=400,
-            detail="Unsupported file type.",
-        )
+        raise HTTPException(status_code=400, detail="Unsupported file type.")
+
+    guest_usage = None
+
+    if current_user is None:
+        raw_token = request.cookies.get("guest_token") if request else None
+        new_cookie = not raw_token
+
+        if not raw_token:
+            raw_token = secrets.token_urlsafe(32)
+
+        token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
+        guest_usage = db.query(GuestUsage).filter_by(
+            token_hash=token_hash
+        ).first()
+
+        if guest_usage is None:
+            guest_usage = GuestUsage(token_hash=token_hash, files_used=0)
+            db.add(guest_usage)
+            db.commit()
+            db.refresh(guest_usage)
+
+        if new_cookie and response is not None:
+            response.set_cookie(
+                key="guest_token",
+                value=raw_token,
+                httponly=True,
+                samesite="lax",
+                secure=os.getenv("COOKIE_SECURE", "false").lower() == "true",
+                max_age=60 * 60 * 24 * 365,
+            )
+
+        if guest_usage.files_used >= 3:
+            await file.close()
+            raise HTTPException(
+                status_code=429,
+                detail="You've used all 3 free files. Register to continue.",
+            )
 
     input_path = None
     wav_path = None
@@ -208,12 +266,10 @@ async def transcribe(
 
             while True:
                 data = await file.read(1024 * 1024)
-
                 if not data:
                     break
 
                 total_size += len(data)
-
                 if total_size > MAX_FILE_SIZE:
                     raise HTTPException(
                         status_code=413,
@@ -230,70 +286,59 @@ async def transcribe(
 
         wav_path = input_path + ".wav"
         convert_to_wav(input_path, wav_path)
-
         result = transcribe_audio(model, wav_path)
 
-        history = TranscriptionHistory(
-            user_id=current_user.id,
-            filename=filename,
-            language=result["language"],
-            text=result["text"],
-        )
+        if current_user is not None:
+            history = TranscriptionHistory(
+                user_id=current_user.id,
+                filename=filename,
+                language=result["language"],
+                text=result["text"],
+            )
+            db.add(history)
+        else:
+            guest_usage.files_used += 1
 
-        db.add(history)
         db.commit()
-        db.refresh(history)
 
         return {
             "filename": filename,
             "text": result["text"],
             "language": result["language"],
             "segments": result["segments"],
+            **(
+                {"files_remaining": max(0, 3 - guest_usage.files_used)}
+                if guest_usage is not None
+                else {}
+            ),
         }
 
     except HTTPException:
+        db.rollback()
         raise
-
     except ValueError as exc:
-        raise HTTPException(
-            status_code=400,
-            detail=str(exc),
-        ) from exc
-
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     except RuntimeError as exc:
+        db.rollback()
         raise HTTPException(
             status_code=503,
             detail="Audio processing service is not configured correctly.",
         ) from exc
-
     except Exception as exc:
         db.rollback()
         raise HTTPException(
             status_code=500,
             detail="Audio processing failed.",
         ) from exc
-
     finally:
-        for path in (input_path, wav_path):
-            if path and os.path.exists(path):
+        for temp_path in (input_path, wav_path):
+            if temp_path and os.path.exists(temp_path):
                 try:
-                    os.remove(path)
+                    os.remove(temp_path)
                 except OSError:
                     pass
-
         await file.close()
-
-from pydantic import BaseModel, Field
-from src.api_keys import create_api_key, revoke_api_key
-
-
-class OrganizationCreate(BaseModel):
-    name: str = Field(min_length=2, max_length=200)
-
-
-class APIKeyCreate(BaseModel):
-    name: str = Field(min_length=1, max_length=100)
-
 
 @app.post("/organizations", status_code=201)
 def create_organization(

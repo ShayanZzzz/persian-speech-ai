@@ -1,14 +1,7 @@
 
 from datetime import datetime, timezone
 
-from sqlalchemy import (
-    Boolean,
-    DateTime,
-    ForeignKey,
-    Integer,
-    String,
-    Text,
-)
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database import Base
@@ -22,21 +15,17 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    email: Mapped[str] = mapped_column(
-        String(255), unique=True, index=True
-    )
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     hashed_password: Mapped[str] = mapped_column(String(255))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now
     )
 
     transcriptions: Mapped[list["TranscriptionHistory"]] = relationship(
-        back_populates="user",
-        cascade="all, delete-orphan",
+        back_populates="user", cascade="all, delete-orphan"
     )
-
     owned_organizations: Mapped[list["Organization"]] = relationship(
-        back_populates="owner",
+        back_populates="owner"
     )
 
 
@@ -45,8 +34,7 @@ class TranscriptionHistory(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"),
-        index=True,
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
     organization_id: Mapped[int | None] = mapped_column(
         ForeignKey("organizations.id", ondelete="SET NULL"),
@@ -69,22 +57,16 @@ class Organization(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(200))
     owner_user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"),
-        index=True,
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now
     )
-    is_active: Mapped[bool] = mapped_column(
-        Boolean, default=True, nullable=False
-    )
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
-    owner: Mapped["User"] = relationship(
-        back_populates="owned_organizations"
-    )
+    owner: Mapped["User"] = relationship(back_populates="owned_organizations")
     api_keys: Mapped[list["OrganizationAPIKey"]] = relationship(
-        back_populates="organization",
-        cascade="all, delete-orphan",
+        back_populates="organization", cascade="all, delete-orphan"
     )
 
 
@@ -93,8 +75,7 @@ class OrganizationAPIKey(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     organization_id: Mapped[int] = mapped_column(
-        ForeignKey("organizations.id", ondelete="CASCADE"),
-        index=True,
+        ForeignKey("organizations.id", ondelete="CASCADE"), index=True
     )
     name: Mapped[str] = mapped_column(String(100))
     key_prefix: Mapped[str] = mapped_column(String(24), index=True)
@@ -105,10 +86,24 @@ class OrganizationAPIKey(Base):
     last_used_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
-    is_active: Mapped[bool] = mapped_column(
-        Boolean, default=True, nullable=False
-    )
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
-    organization: Mapped["Organization"] = relationship(
-        back_populates="api_keys"
+    organization: Mapped["Organization"] = relationship(back_populates="api_keys")
+
+
+class GuestUsage(Base):
+    __tablename__ = "guest_usage"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    token_hash: Mapped[str] = mapped_column(
+        String(64), unique=True, index=True, nullable=False
+    )
+    files_used: Mapped[int] = mapped_column(
+        Integer, default=0, nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, onupdate=utc_now
     )
