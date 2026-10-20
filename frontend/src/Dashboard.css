@@ -1,0 +1,354 @@
+.dashboard-page {
+  --dash-bg: #f5f5ef;
+  --dash-ink: #202820;
+  --dash-muted: #777e74;
+  --dash-line: #dedfd5;
+  --dash-accent: #c9f36b;
+  min-height: 100vh;
+  padding: 0 6%;
+  background: var(--dash-bg);
+  color: var(--dash-ink);
+  font-family: "Vazirmatn", sans-serif;
+}
+
+.dashboard-page * {
+  box-sizing: border-box;
+}
+
+.dashboard-header {
+  min-height: 78px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid var(--dash-line);
+}
+
+.dashboard-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--dash-ink);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 800;
+  direction: ltr;
+  letter-spacing: .08em;
+}
+
+.dashboard-brand-mark {
+  width: 35px;
+  height: 35px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--dash-ink);
+  color: white;
+  font-size: 17px;
+}
+
+.dashboard-brand-mark span {
+  color: var(--dash-accent);
+}
+
+.dashboard-account {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.dashboard-avatar {
+  width: 39px;
+  height: 39px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--dash-accent);
+  font-weight: 800;
+}
+
+.dashboard-account-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.dashboard-account-info strong {
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  direction: ltr;
+  text-align: right;
+  font-size: 12px;
+}
+
+.dashboard-account-info span {
+  color: var(--dash-muted);
+  font-size: 10px;
+}
+
+.dashboard-logout {
+  margin-right: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--dash-line);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--dash-ink);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.dashboard-logout:hover {
+  background: #e9eae1;
+}
+
+.dashboard-content {
+  width: min(100%, 1000px);
+  margin: 0 auto;
+  padding: 60px 0 75px;
+}
+
+.dashboard-welcome {
+  padding: 35px;
+  border: 1px solid var(--dash-line);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.dashboard-eyebrow {
+  color: var(--dash-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.dashboard-welcome h1 {
+  margin: 14px 0 8px;
+  font-size: clamp(27px, 4vw, 40px);
+  font-weight: 700;
+}
+
+.dashboard-welcome p {
+  margin: 0;
+  color: var(--dash-muted);
+  font-size: 13px;
+  line-height: 2;
+}
+
+.dashboard-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 20px;
+  margin-top: 25px;
+  padding: 12px 17px;
+  border-radius: 6px;
+  background: var(--dash-ink);
+  color: white;
+  text-decoration: none;
+  font-size: 12px;
+}
+
+.dashboard-primary span {
+  color: var(--dash-accent);
+  font-size: 17px;
+}
+
+.dashboard-history {
+  margin-top: 42px;
+}
+
+.dashboard-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 18px;
+}
+
+.dashboard-section-heading h2 {
+  margin: 6px 0 0;
+  font-size: 22px;
+}
+
+.dashboard-count {
+  padding: 6px 10px;
+  border: 1px solid var(--dash-line);
+  border-radius: 20px;
+  color: var(--dash-muted);
+  font-size: 11px;
+}
+
+.dashboard-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 210px;
+  padding: 30px;
+  border: 1px dashed #d2d5c9;
+  border-radius: 10px;
+  color: var(--dash-muted);
+  text-align: center;
+  font-size: 12px;
+  line-height: 2;
+}
+
+.dashboard-empty h3 {
+  margin: 8px 0 0;
+  color: var(--dash-ink);
+  font-size: 15px;
+}
+
+.dashboard-empty p {
+  margin: 4px 0 14px;
+}
+
+.dashboard-empty a {
+  color: var(--dash-ink);
+  font-weight: 700;
+}
+
+.dashboard-empty-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--dash-accent);
+  color: var(--dash-ink);
+  font-size: 22px;
+}
+
+.dashboard-error {
+  color: #a52e2e;
+}
+
+.dashboard-error button {
+  margin-top: 10px;
+  padding: 8px 12px;
+  border: 1px solid var(--dash-line);
+  border-radius: 5px;
+  background: white;
+  font: inherit;
+  cursor: pointer;
+}
+
+.dashboard-records {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dashboard-record {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  padding: 20px;
+  border: 1px solid var(--dash-line);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, .7);
+}
+
+.dashboard-file-icon {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 7px;
+  background: #e9ecdf;
+  color: #526044;
+  font-size: 10px;
+  font-weight: 800;
+  direction: ltr;
+}
+
+.dashboard-record-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.dashboard-record-main strong {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+
+.dashboard-record-main > span {
+  display: block;
+  margin-top: 5px;
+  color: var(--dash-muted);
+  font-size: 10px;
+}
+
+.dashboard-record-main p {
+  margin: 12px 0 0;
+  color: #50574d;
+  font-size: 12px;
+  line-height: 2;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-footer {
+  display: flex;
+  justify-content: center;
+  gap: 7px;
+  padding: 22px 0;
+  border-top: 1px solid var(--dash-line);
+  color: var(--dash-muted);
+  font-size: 10px;
+}
+
+.dashboard-footer span {
+  color: #a2b67d;
+}
+
+@media (max-width: 600px) {
+  .dashboard-page {
+    padding: 0 18px;
+  }
+
+  .dashboard-header {
+    min-height: 70px;
+  }
+
+  .dashboard-account {
+    gap: 8px;
+  }
+
+  .dashboard-avatar {
+    width: 32px;
+    height: 32px;
+  }
+
+  .dashboard-account-info strong {
+    max-width: 125px;
+    font-size: 10px;
+  }
+
+  .dashboard-account-info span {
+    font-size: 9px;
+  }
+
+  .dashboard-logout {
+    margin-right: 0;
+    padding: 7px 9px;
+  }
+
+  .dashboard-content {
+    padding-top: 32px;
+  }
+
+  .dashboard-welcome {
+    padding: 23px 19px;
+  }
+
+  .dashboard-record {
+    padding: 14px;
+    gap: 10px;
+  }
+}

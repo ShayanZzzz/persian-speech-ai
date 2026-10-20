@@ -6,6 +6,8 @@ import './index.css'
 import App from './App'
 import MediaStudio from './MediaStudio'
 import Studio from './Studio'
+import Login from './Login'
+import Dashboard from './Dashboard'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -14,6 +16,8 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/" element={<App />} />
         <Route path="/studio" element={<MediaStudio />} />
         <Route path="/studio/negar" element={<Studio />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
