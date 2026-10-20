@@ -8,6 +8,9 @@ import os
 import tempfile
 from pathlib import Path
 
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 from fastapi import Depends, FastAPI, File, HTTPException, Request, Response, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -51,6 +54,10 @@ with engine.begin() as connection:
             ))
 
 app = FastAPI(title="Persian Speech AI")
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 
 STATIC_DIR = Path(__file__).parent / "static"
 
@@ -133,7 +140,9 @@ def health():
 
 
 @app.post("/register", status_code=201)
+@limiter.limit("5/minute")
 def register(
+    request: Request,
     payload: UserRegister,
     db: Session = Depends(get_db),
 ):
@@ -157,7 +166,9 @@ def register(
 
 
 @app.post("/login")
+@limiter.limit("5/minute")
 def login(
+    request: Request,
     payload: UserLogin,
     db: Session = Depends(get_db),
 ):
