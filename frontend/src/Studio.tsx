@@ -32,8 +32,13 @@ function Studio() {
       const formData = new FormData()
       formData.append('file', file)
 
+      const token = localStorage.getItem('access_token')
+
       const response = await fetch('/transcribe', {
         method: 'POST',
+        headers: token
+          ? { Authorization: `Bearer ${token}` }
+          : {},
         body: formData,
         credentials: 'include',
       })
@@ -82,8 +87,14 @@ function Studio() {
           <button className="negar-language" type="button" onClick={() => setLang(fa ? 'en' : 'fa')}>
             {fa ? 'English' : 'فارسی'}
           </button>
-          <a className="negar-account" href="#account">
-            {fa ? 'ورود' : 'Sign in'} <span>↗</span>
+          <a
+            className="negar-account"
+            href={localStorage.getItem('access_token') ? '/dashboard' : '/login'}
+          >
+            {localStorage.getItem('access_token')
+              ? (fa ? 'داشبورد' : 'Dashboard')
+              : (fa ? 'ورود' : 'Sign in')}
+            <span>↗</span>
           </a>
         </div>
       </header>

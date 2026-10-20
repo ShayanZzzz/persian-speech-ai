@@ -1,4 +1,3 @@
-
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
@@ -10,7 +9,11 @@ export default defineConfig({
     proxy: {
       '/health': backend,
       '/register': backend,
-      '/login': backend,
+      '/login': {
+        target: backend,
+        changeOrigin: true,
+        bypass: (req) => req.method === 'GET' ? req.url : undefined,
+      },
       '/me': backend,
       '/history': backend,
       '/transcribe': backend,
