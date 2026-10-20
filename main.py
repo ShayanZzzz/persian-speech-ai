@@ -1,4 +1,5 @@
 import hashlib
+import json
 import secrets
 from src.api_keys import create_api_key, revoke_api_key
 from src.models import Organization, OrganizationAPIKey
@@ -11,6 +12,7 @@ from fastapi import Depends, FastAPI, File, HTTPException, Request, Response, Up
 from fastapi.responses import FileResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import inspect, text
 from sqlalchemy.orm import Session
 
 from src.auth import (
@@ -28,11 +30,25 @@ from src.models import (
     GuestUsage,
 )
 from src.inference import load_model, transcribe_audio
-from src.media import convert_to_wav
+from src.media import convert_to_wav, get_media_duration
 
 
-# Create missing database tables.
+# Create missing tables and add metadata columns to existing history tables.
 Base.metadata.create_all(bind=engine)
+with engine.begin() as connection:
+    existing_columns = {
+        column["name"]
+        for column in inspect(connection).get_columns("transcription_history")
+    }
+    for column_name, column_type in {
+        "duration_seconds": "FLOAT",
+        "mode": "VARCHAR(50)",
+        "segments": "TEXT",
+    }.items():
+        if column_name not in existing_columns:
+            connection.execute(text(
+                f"ALTER TABLE transcription_history ADD COLUMN {column_name} {column_type}"
+            ))
 
 app = FastAPI(title="Persian Speech AI")
 
@@ -193,6 +209,9 @@ def get_history(
             "filename": record.filename,
             "language": record.language,
             "text": record.text,
+            "duration_seconds": record.duration_seconds,
+            "mode": record.mode,
+            "segments": json.loads(record.segments) if record.segments else [],
             "created_at": record.created_at,
         }
         for record in records
@@ -284,6 +303,7 @@ async def transcribe(
                 detail="The uploaded file is empty.",
             )
 
+        duration_seconds = get_media_duration(input_path)
         wav_path = input_path + ".wav"
         convert_to_wav(input_path, wav_path)
         result = transcribe_audio(model, wav_path)
@@ -294,6 +314,9 @@ async def transcribe(
                 filename=filename,
                 language=result["language"],
                 text=result["text"],
+                duration_seconds=duration_seconds,
+                mode="whisper-base",
+                segments=json.dumps(result["segments"], ensure_ascii=False),
             )
             db.add(history)
         else:
@@ -306,6 +329,8 @@ async def transcribe(
             "text": result["text"],
             "language": result["language"],
             "segments": result["segments"],
+            "duration_seconds": duration_seconds,
+            "mode": "whisper-base",
             **(
                 {"files_remaining": max(0, 3 - guest_usage.files_used)}
                 if guest_usage is not None

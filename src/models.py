@@ -1,7 +1,7 @@
 
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database import Base
@@ -44,6 +44,9 @@ class TranscriptionHistory(Base):
     filename: Mapped[str] = mapped_column(String(255))
     language: Mapped[str] = mapped_column(String(20))
     text: Mapped[str] = mapped_column(Text)
+    duration_seconds: Mapped[float | None] = mapped_column(Float, nullable=True)
+    mode: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    segments: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now
     )

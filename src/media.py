@@ -2,6 +2,26 @@ import shutil
 import subprocess
 
 
+def get_media_duration(input_path: str) -> float | None:
+    """Return media duration in seconds, or None if unavailable."""
+    ffprobe = shutil.which("ffprobe")
+    if ffprobe is None:
+        return None
+
+    command = [
+        ffprobe, "-v", "error", "-show_entries", "format=duration",
+        "-of", "default=noprint_wrappers=1:nokey=1", input_path,
+    ]
+    try:
+        result = subprocess.run(
+            command, check=True, capture_output=True, text=True, timeout=15
+        )
+        duration = float(result.stdout.strip())
+        return duration if duration >= 0 else None
+    except (subprocess.SubprocessError, ValueError, OSError):
+        return None
+
+
 def convert_to_wav(input_path: str, output_path: str) -> None:
     """
     Extract audio from an audio/video file and normalize it
