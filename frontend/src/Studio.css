@@ -491,3 +491,25 @@
     font-size: clamp(38px, 10vw, 62px);
   }
 }
+
+
+.negar-register-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 8px;
+  padding: 10px 14px;
+  border: 1px solid #8ee6bd;
+  border-radius: 5px;
+  background: #8ee6bd;
+  color: #14251e;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 160ms ease, border-color 160ms ease;
+}
+
+.negar-register-link:hover {
+  border-color: #b0f5d3;
+  background: #b0f5d3;
+}

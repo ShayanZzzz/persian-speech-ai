@@ -11,6 +11,7 @@ function Studio() {
   const fa = lang === 'fa'
   const [processing, setProcessing] = useState(false)
   const [error, setError] = useState('')
+  const [quotaExceeded, setQuotaExceeded] = useState(false)
   const [result, setResult] = useState<{ text: string; language?: string; files_remaining?: number } | null>(null)
 
   const acceptFile = (selectedFile?: File) => {
@@ -26,6 +27,7 @@ function Studio() {
 
     setProcessing(true)
     setError('')
+    setQuotaExceeded(false)
     setResult(null)
 
     try {
@@ -45,6 +47,14 @@ function Studio() {
       const data = await response.json().catch(() => ({}))
 
       if (!response.ok) {
+        if (response.status === 429) {
+          setQuotaExceeded(true)
+          throw new Error(
+            fa
+              ? 'سهمیهٔ سه فایل رایگان شما تمام شده است. برای ادامه، حساب کاربری بسازید.'
+              : 'You have used all 3 free files. Create an account to continue.'
+          )
+        }
         const message =
           typeof data.detail === 'string'
             ? data.detail
@@ -201,6 +211,11 @@ function Studio() {
         {(error || result) && (
           <section className="negar-result" aria-live="polite">
             {error && <p role="alert">{error}</p>}
+            {quotaExceeded && (
+              <a className="negar-register-link" href="/login">
+                {fa ? 'ورود / ساخت حساب کاربری' : 'Sign in / Create account'} ↗
+              </a>
+            )}
             {result && (
               <>
                 <h2>{fa ? 'متن تبدیل‌شده' : 'Transcription result'}</h2>
@@ -234,7 +249,7 @@ function Studio() {
             <strong>{fa ? 'سه فایل رایگان برای شروع.' : 'Three free files to get started.'}</strong>
             <p>{fa ? 'بدون حساب شروع کن؛ برای امکانات بیشتر وارد حساب شو.' : "Start without an account. Sign in when you're ready for more."}</p>
           </div>
-          <div className="negar-quota" aria-label={fa ? 'سه فایل رایگان در کل' : 'Three free files per day'}>
+          <div className="negar-quota" aria-label={fa ? 'سه فایل رایگان در کل' : 'Three free files in total'}>
             <span className="negar-quota-number">۰۳</span>
             <span className="negar-quota-label">{fa ? 'فایل در کل' : 'FILES TOTAL'}</span>
           </div>
