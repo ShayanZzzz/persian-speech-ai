@@ -1,6 +1,7 @@
 
 import type { CSSProperties } from 'react'
 import './App.css'
+import CaveIntro from './CaveIntro'
 
 const services = [
   {
@@ -49,6 +50,8 @@ function App() {
           Explore hub <span aria-hidden="true">↗</span>
         </a>
       </header>
+
+      <CaveIntro />
 
       <section className="hero" id="about">
         <div className="hero-copy">
