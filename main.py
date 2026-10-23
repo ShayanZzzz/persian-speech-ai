@@ -15,7 +15,6 @@ from fastapi import Depends, FastAPI, File, HTTPException, Request, Response, Up
 from fastapi.responses import FileResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import inspect, text
 from sqlalchemy.orm import Session
 
 from src.auth import (
@@ -36,23 +35,6 @@ from src.models import (
 from src.inference import load_model, transcribe_audio
 from src.media import convert_to_wav, get_media_duration
 
-
-# Create missing tables and add metadata columns to existing history tables.
-Base.metadata.create_all(bind=engine)
-with engine.begin() as connection:
-    existing_columns = {
-        column["name"]
-        for column in inspect(connection).get_columns("transcription_history")
-    }
-    for column_name, column_type in {
-        "duration_seconds": "FLOAT",
-        "mode": "VARCHAR(50)",
-        "segments": "TEXT",
-    }.items():
-        if column_name not in existing_columns:
-            connection.execute(text(
-                f"ALTER TABLE transcription_history ADD COLUMN {column_name} {column_type}"
-            ))
 
 app = FastAPI(title="Persian Speech AI")
 limiter = Limiter(key_func=get_remote_address)
