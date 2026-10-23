@@ -31,6 +31,7 @@ from src.models import (
     OrganizationAPIKey,
     TranscriptionHistory,
     GuestUsage,
+    MediaFile,
 )
 from src.inference import load_model, transcribe_audio
 from src.media import convert_to_wav, get_media_duration
@@ -217,6 +218,7 @@ def get_history(
     return [
         {
             "id": record.id,
+            "public_id": record.media_file.public_id if record.media_file else None,
             "filename": record.filename,
             "language": record.language,
             "text": record.text,
@@ -228,6 +230,50 @@ def get_history(
         for record in records
     ]
 
+
+
+@app.get("/transcript/{public_id}/{slug}")
+def get_transcript(
+    public_id: int,
+    slug: str,
+    current_user=Depends(require_current_user),
+    db: Session = Depends(get_db),
+):
+    media_file = (
+        db.query(MediaFile)
+        .filter(
+            MediaFile.public_id == public_id,
+            MediaFile.user_id == current_user.id,
+        )
+        .first()
+    )
+
+    if media_file is None:
+        raise HTTPException(status_code=404, detail="Transcript not found")
+
+    record = (
+        db.query(TranscriptionHistory)
+        .filter(
+            TranscriptionHistory.media_file_id == media_file.id,
+            TranscriptionHistory.user_id == current_user.id,
+        )
+        .order_by(TranscriptionHistory.id.desc())
+        .first()
+    )
+
+    if record is None:
+        raise HTTPException(status_code=404, detail="Transcript not found")
+
+    return {
+        "public_id": media_file.public_id,
+        "filename": record.filename,
+        "language": record.language,
+        "text": record.text,
+        "duration_seconds": record.duration_seconds,
+        "mode": record.mode,
+        "segments": json.loads(record.segments) if record.segments else [],
+        "created_at": record.created_at,
+    }
 
 
 
@@ -320,8 +366,20 @@ async def transcribe(
         result = transcribe_audio(model, wav_path)
 
         if current_user is not None:
+            media_file = MediaFile(
+                public_id=secrets.randbelow(9_000_000_000_000_000_000) + 1,
+                user_id=current_user.id,
+                filename=filename,
+                media_type=file.content_type or extension.lstrip("."),
+                file_size_bytes=total_size,
+                detected_language=result["language"],
+            )
+            db.add(media_file)
+            db.flush()
+
             history = TranscriptionHistory(
                 user_id=current_user.id,
+                media_file_id=media_file.id,
                 filename=filename,
                 language=result["language"],
                 text=result["text"],
@@ -608,9 +666,21 @@ async def api_transcribe(
         convert_to_wav(input_path, wav_path)
         result = transcribe_audio(model, wav_path)
 
+        media_file = MediaFile(
+            public_id=secrets.randbelow(9_000_000_000_000_000_000) + 1,
+            user_id=organization.owner_user_id,
+            filename=filename,
+            media_type=file.content_type or extension.lstrip("."),
+            file_size_bytes=total_size,
+            detected_language=result["language"],
+        )
+        db.add(media_file)
+        db.flush()
+
         history = TranscriptionHistory(
             user_id=organization.owner_user_id,
             organization_id=organization.id,
+            media_file_id=media_file.id,
             filename=filename,
             language=result["language"],
             text=result["text"],
