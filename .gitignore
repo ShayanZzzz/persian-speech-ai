@@ -218,3 +218,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Uploaded audio files
+media_uploads/
+
+# Local database backups and temporary editor backups
+backups/
+*.bak

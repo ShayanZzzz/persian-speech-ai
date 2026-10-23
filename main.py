@@ -5,7 +5,9 @@ from src.api_keys import create_api_key, revoke_api_key
 from src.models import Organization, OrganizationAPIKey
 from pydantic import BaseModel, Field
 import os
+import shutil
 import tempfile
+import uuid
 from pathlib import Path
 
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -43,6 +45,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 STATIC_DIR = Path(__file__).parent / "static"
+AUDIO_STORAGE_DIR = Path(__file__).parent / "media_uploads"
 
 app.mount(
     "/static",
@@ -200,7 +203,7 @@ def get_history(
     return [
         {
             "id": record.id,
-            "public_id": record.media_file.public_id if record.media_file else None,
+            "public_id": str(record.media_file.public_id) if record.media_file else None,
             "filename": record.filename,
             "language": record.language,
             "text": record.text,
@@ -247,7 +250,7 @@ def get_transcript(
         raise HTTPException(status_code=404, detail="Transcript not found")
 
     return {
-        "public_id": media_file.public_id,
+        "public_id": str(media_file.public_id),
         "filename": record.filename,
         "language": record.language,
         "text": record.text,
@@ -313,6 +316,8 @@ async def transcribe(
 
     input_path = None
     wav_path = None
+    stored_path = None
+    transaction_committed = False
     total_size = 0
 
     try:
@@ -348,12 +353,18 @@ async def transcribe(
         result = transcribe_audio(model, wav_path)
 
         if current_user is not None:
+            AUDIO_STORAGE_DIR.mkdir(parents=True, exist_ok=True)
+            stored_path = AUDIO_STORAGE_DIR / f"{uuid.uuid4().hex}{extension}"
+            shutil.copy2(input_path, stored_path)
+            relative_storage_path = str(stored_path.relative_to(Path(__file__).parent))
+
             media_file = MediaFile(
                 public_id=secrets.randbelow(9_000_000_000_000_000_000) + 1,
                 user_id=current_user.id,
                 filename=filename,
                 media_type=file.content_type or extension.lstrip("."),
                 file_size_bytes=total_size,
+                storage_path=relative_storage_path,
                 detected_language=result["language"],
             )
             db.add(media_file)
@@ -374,9 +385,11 @@ async def transcribe(
             guest_usage.files_used += 1
 
         db.commit()
+        transaction_committed = True
 
         return {
             "filename": filename,
+            **({"public_id": str(media_file.public_id)} if current_user is not None else {}),
             "text": result["text"],
             "language": result["language"],
             "segments": result["segments"],
@@ -408,6 +421,12 @@ async def transcribe(
             detail="Audio processing failed.",
         ) from exc
     finally:
+        if stored_path is not None and not transaction_committed:
+            try:
+                stored_path.unlink(missing_ok=True)
+            except OSError:
+                pass
+
         for temp_path in (input_path, wav_path):
             if temp_path and os.path.exists(temp_path):
                 try:
@@ -415,6 +434,41 @@ async def transcribe(
                 except OSError:
                     pass
         await file.close()
+
+@app.get("/media/{public_id}/audio")
+def get_media_audio(
+    public_id: int,
+    current_user=Depends(require_current_user),
+    db: Session = Depends(get_db),
+):
+    media_file = (
+        db.query(MediaFile)
+        .filter(
+            MediaFile.public_id == public_id,
+            MediaFile.user_id == current_user.id,
+        )
+        .first()
+    )
+
+    if media_file is None or not media_file.storage_path:
+        raise HTTPException(status_code=404, detail="Audio file not found.")
+
+    storage_root = AUDIO_STORAGE_DIR.resolve()
+    audio_path = (Path(__file__).parent / media_file.storage_path).resolve()
+
+    if not audio_path.is_relative_to(storage_root) or not audio_path.is_file():
+        raise HTTPException(status_code=404, detail="Audio file not found.")
+
+    media_type = media_file.media_type
+    if not media_type or "/" not in media_type:
+        media_type = None
+
+    return FileResponse(
+        path=audio_path,
+        media_type=media_type,
+        filename=media_file.filename,
+    )
+
 
 @app.post("/organizations", status_code=201)
 def create_organization(

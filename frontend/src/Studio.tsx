@@ -1,9 +1,11 @@
 import { useRef, useState } from 'react'
+import { useAudioPlayer } from './AudioPlayer'
 import './Studio.css'
 
 type Language = 'fa' | 'en'
 
 function Studio() {
+  const { playLocalFile } = useAudioPlayer()
   const inputRef = useRef<HTMLInputElement>(null)
   const [file, setFile] = useState<File | null>(null)
   const [dragging, setDragging] = useState(false)
@@ -17,6 +19,7 @@ function Studio() {
   const acceptFile = (selectedFile?: File) => {
     if (selectedFile) {
       setFile(selectedFile)
+      playLocalFile(selectedFile)
       setError('')
       setResult(null)
     }

@@ -1,0 +1,128 @@
+.file-detail-page {
+  min-height: 100vh;
+  padding: 28px clamp(18px, 5vw, 72px) 64px;
+  background: var(--dash-bg, #f5f5f0);
+  color: var(--dash-ink, #181a18);
+  font-family: inherit;
+}
+
+.file-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--dash-line, #e4e4dc);
+}
+
+.file-detail-back {
+  color: var(--dash-muted, #77796f);
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.file-detail-back:hover {
+  color: var(--dash-ink, #181a18);
+}
+
+.file-detail-brand {
+  font-size: 15px;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+}
+
+.file-detail-content {
+  width: min(100%, 1000px);
+  margin: 52px auto 0;
+}
+
+.file-detail-eyebrow {
+  color: var(--dash-muted, #77796f);
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.file-detail-content h1 {
+  margin: 0;
+  font-size: clamp(24px, 4vw, 36px);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.file-detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.file-detail-meta > div {
+  display: grid;
+  gap: 8px;
+  min-width: 150px;
+  padding: 14px 16px;
+  border: 1px solid var(--dash-line, #e4e4dc);
+  border-radius: 12px;
+  background: var(--dash-surface, #fff);
+}
+
+.file-detail-meta span {
+  color: var(--dash-muted, #77796f);
+  font-size: 12px;
+}
+
+.file-detail-meta strong {
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.file-detail-transcript {
+  margin-top: 28px;
+  padding: clamp(20px, 4vw, 36px);
+  border: 1px solid var(--dash-line, #e4e4dc);
+  border-radius: 16px;
+  background: var(--dash-surface, #fff);
+  box-shadow: 0 8px 28px rgba(24, 26, 24, 0.035);
+}
+
+.file-detail-transcript h2 {
+  margin: 0 0 18px;
+  font-size: 17px;
+}
+
+.file-detail-transcript-body {
+  font-size: 15px;
+  line-height: 2.1;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.file-detail-state {
+  width: min(100%, 760px);
+  margin: 80px auto;
+  padding: 28px;
+  border: 1px solid var(--dash-line, #e4e4dc);
+  border-radius: 14px;
+  background: var(--dash-surface, #fff);
+  line-height: 1.9;
+}
+
+.file-detail-state button {
+  margin-top: 12px;
+  padding: 9px 14px;
+  border: 1px solid var(--dash-line, #e4e4dc);
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.dashboard-table tbody tr.dashboard-file-row {
+  cursor: pointer;
+}
+
+.dashboard-table tbody tr.dashboard-file-row:focus-visible {
+  outline: 2px solid var(--dash-ink, #181a18);
+  outline-offset: -3px;
+}
