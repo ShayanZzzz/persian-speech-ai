@@ -1,0 +1,703 @@
+.video-editor {
+  --ve-bg: #10120f;
+  --ve-panel: #181b17;
+  --ve-border: rgba(235, 239, 225, 0.1);
+  --ve-text: #e9ece3;
+  --ve-muted: #92988d;
+  --ve-accent: #c7f36b;
+  min-height: 100vh;
+  padding: 0 32px 48px;
+  background: var(--ve-bg);
+  color: var(--ve-text);
+  font-family: 'Vazirmatn', sans-serif;
+  box-sizing: border-box;
+}
+
+.video-editor *,
+.video-editor *::before,
+.video-editor *::after {
+  box-sizing: border-box;
+}
+
+.video-editor button,
+.video-editor input,
+.video-editor textarea,
+.video-editor select {
+  font: inherit;
+}
+
+.video-editor button {
+  cursor: pointer;
+}
+
+.video-editor button:focus-visible,
+.video-editor input:focus-visible,
+.video-editor textarea:focus-visible,
+.video-editor select:focus-visible {
+  outline: 2px solid var(--ve-accent);
+  outline-offset: 3px;
+}
+
+.ve-header {
+  min-height: 100px;
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  align-items: center;
+  gap: 24px;
+  border-bottom: 1px solid var(--ve-border);
+  margin-bottom: 30px;
+}
+
+.ve-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  width: fit-content;
+  color: var(--ve-text);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+}
+
+.ve-brand-mark {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--ve-accent);
+  color: #171b10;
+  font-size: 21px;
+  letter-spacing: 0;
+}
+
+.ve-header-title {
+  text-align: center;
+}
+
+.ve-header-title h1 {
+  margin: 5px 0 0;
+  font-size: clamp(19px, 2vw, 27px);
+  font-weight: 650;
+}
+
+.ve-eyebrow {
+  color: var(--ve-accent);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.8px;
+}
+
+.ve-header > button {
+  justify-self: end;
+}
+
+.ve-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 24px;
+  max-width: 1600px;
+  margin: 0 auto;
+  align-items: start;
+}
+
+.ve-preview-column,
+.ve-sidebar {
+  min-width: 0;
+}
+
+.ve-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.ve-section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.ve-section-heading h2,
+.ve-panel h2 {
+  margin: 5px 0 0;
+  font-size: 17px;
+  font-weight: 650;
+}
+
+.ve-player {
+  position: relative;
+  width: 100%;
+  max-height: min(52vh, 560px);
+  overflow: hidden;
+  border: 1px solid var(--ve-border);
+  border-radius: 16px;
+  background: #080908;
+  aspect-ratio: 16 / 9;
+}
+
+.ve-player video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.ve-empty-player {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  height: 100%;
+  min-height: 300px;
+  border: 0;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(199, 243, 107, 0.07), transparent 55%),
+    #0a0b09;
+  color: var(--ve-text);
+}
+
+.ve-empty-player strong {
+  font-size: 17px;
+}
+
+.ve-empty-player > span:last-child {
+  color: var(--ve-muted);
+  font-size: 12px;
+}
+
+.ve-play-symbol {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  padding-right: 3px;
+  border: 1px solid rgba(199, 243, 107, 0.5);
+  border-radius: 50%;
+  color: var(--ve-accent);
+  font-size: 21px;
+}
+
+.ve-subtitle-overlay {
+  position: absolute;
+  z-index: 2;
+  right: 5%;
+  left: 5%;
+  width: fit-content;
+  max-width: 90%;
+  margin: auto;
+  padding: 5px 12px;
+  border-radius: 4px;
+  text-align: center;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+  text-shadow: 0 1px 2px #000;
+}
+
+.ve-position-bottom {
+  bottom: 17%;
+}
+
+.ve-position-middle {
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.ve-position-top {
+  top: 12%;
+}
+
+.ve-player-controls {
+  position: absolute;
+  z-index: 3;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 14px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.92));
+}
+
+.ve-player-controls button,
+.ve-player-controls select {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 7px;
+  padding: 7px 10px;
+  background: rgba(20, 22, 19, 0.9);
+  color: white;
+  font-size: 11px;
+}
+
+.ve-player-controls span {
+  direction: ltr;
+  color: #fff;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ve-file-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 14px 0 25px;
+  padding: 15px 17px;
+  border: 1px solid var(--ve-border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.018);
+  overflow-wrap: anywhere;
+}
+
+.ve-file-info strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ve-file-info span {
+  color: var(--ve-muted);
+  font-size: 11px;
+}
+
+.ve-panel {
+  min-width: 0;
+  padding: 22px;
+  border: 1px solid var(--ve-border);
+  border-radius: 15px;
+  background: var(--ve-panel);
+}
+
+.ve-preview-column > .ve-panel {
+  margin-top: 22px;
+}
+
+.ve-field {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-top: 19px;
+  color: #d5d9ce;
+  font-size: 12px;
+}
+
+.ve-field input:not([type='range']),
+.ve-field textarea,
+.ve-field select {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid rgba(235, 239, 225, 0.12);
+  border-radius: 9px;
+  padding: 11px 12px;
+  background: #11130f;
+  color: var(--ve-text);
+  outline: none;
+}
+
+.ve-field textarea {
+  min-height: 90px;
+  resize: vertical;
+  line-height: 1.8;
+}
+
+.ve-field input[type='range'],
+.ve-seek {
+  width: 100%;
+  accent-color: var(--ve-accent);
+  cursor: pointer;
+}
+
+.ve-field input[dir='ltr'] {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ve-secondary-button,
+.ve-primary-button,
+.ve-danger-button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  border: 1px solid var(--ve-border);
+  border-radius: 8px;
+  padding: 9px 13px;
+  font-size: 11px;
+  font-weight: 650;
+  text-decoration: none;
+  transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+
+.ve-secondary-button {
+  background: #20231e;
+  color: var(--ve-text);
+}
+
+.ve-secondary-button:hover {
+  border-color: rgba(199, 243, 107, 0.45);
+  background: #272b23;
+}
+
+.ve-primary-button {
+  border-color: var(--ve-accent);
+  background: var(--ve-accent);
+  color: #15180f;
+}
+
+.ve-primary-button:hover {
+  background: #d5ff8c;
+}
+
+.ve-danger-button {
+  border-color: rgba(255, 120, 120, 0.2);
+  background: rgba(255, 100, 100, 0.08);
+  color: #ffaaaa;
+}
+
+.ve-danger-button:hover {
+  background: rgba(255, 100, 100, 0.16);
+}
+
+.ve-full-button {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.ve-inline-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 16px;
+}
+
+.ve-color-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-top: 18px;
+}
+
+.ve-color-row label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  color: #d5d9ce;
+  font-size: 11px;
+}
+
+.ve-color-row input[type='color'] {
+  width: 40px;
+  height: 34px;
+  padding: 3px;
+  border: 1px solid var(--ve-border);
+  border-radius: 7px;
+  background: #11130f;
+  cursor: pointer;
+}
+
+.ve-seek {
+  display: block;
+  margin: 15px 0 20px;
+  direction: ltr;
+  transform: none;
+}
+
+.ve-selected-timing {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 22px;
+  margin: 8px 0 12px;
+  color: var(--ve-muted);
+  font-size: 12px;
+}
+
+.ve-selected-timing strong {
+  color: var(--ve-text, #efffd3);
+  font-variant-numeric: tabular-nums;
+}
+
+.ve-timeline {
+  position: relative;
+  display: block;
+  min-height: 112px;
+  margin-top: 8px;
+  overflow: hidden;
+  border: 1px solid var(--ve-border);
+  border-radius: 8px;
+  background: #11130f;
+  direction: ltr;
+  touch-action: pan-y;
+  cursor: crosshair;
+}
+
+.ve-time-ruler {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 35px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  pointer-events: none;
+}
+
+.ve-time-tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  border-left: 1px solid rgba(255, 255, 255, 0.13);
+}
+
+.ve-time-label {
+  position: absolute;
+  top: 5px;
+  left: 0;
+  color: #a6ad9c;
+  font-size: 10px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.ve-timeline-clip {
+  position: absolute;
+  top: 48px;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  box-sizing: border-box;
+  min-width: 18px;
+  height: 38px;
+  overflow: hidden;
+  border: 1px solid rgba(199, 243, 107, 0.35);
+  border-radius: 6px;
+  padding: 0;
+  background: rgba(199, 243, 107, 0.14);
+  color: #dce9c6;
+  text-align: right;
+  font-size: 11px;
+  direction: ltr;
+  cursor: grab;
+  touch-action: none;
+  z-index: 2;
+}
+
+.ve-timeline-clip:active {
+  cursor: grabbing;
+}
+
+.ve-clip-label {
+  flex: 1;
+  align-self: center;
+  overflow: hidden;
+  padding: 0 5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl;
+  pointer-events: none;
+}
+
+.ve-resize-handle {
+  z-index: 1;
+  flex: 0 0 10px;
+  width: 10px;
+  cursor: ew-resize;
+  background: var(--ve-accent);
+  touch-action: none;
+}
+
+.ve-resize-handle:hover {
+  background: #fff;
+}
+
+.ve-playhead {
+  position: absolute;
+  z-index: 4;
+  top: 35px;
+  bottom: 0;
+  width: 2px;
+  background: #fff;
+  box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+  pointer-events: none;
+}
+
+.ve-timeline-empty {
+  position: absolute;
+  top: 50px;
+  left: 12px;
+  margin: 0;
+  pointer-events: none;
+}
+
+.ve-timeline-clip.is-selected {
+  border-color: var(--ve-accent);
+  background: rgba(199, 243, 107, 0.18);
+  color: #efffd3;
+}
+
+.ve-timeline-clip:hover {
+  border-color: var(--ve-accent);
+}
+
+.ve-empty-note,
+.ve-export-note {
+  color: var(--ve-muted);
+  font-size: 12px;
+  line-height: 2;
+}
+
+.ve-export-note {
+  margin: 12px 0 15px;
+}
+
+.ve-message {
+  margin: 14px 0 0;
+  color: var(--ve-accent);
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+@media (min-width: 1100px) {
+  .ve-sidebar {
+    position: sticky;
+    top: 20px;
+  }
+}
+
+@media (max-width: 1000px) {
+  .video-editor {
+    padding-right: 20px;
+    padding-left: 20px;
+  }
+
+  .ve-workspace {
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 16px;
+  }
+
+  .ve-panel {
+    padding: 17px;
+  }
+}
+
+@media (max-width: 760px) {
+  .ve-player {
+    max-height: none;
+  }
+
+  .video-editor {
+    padding: 0 14px 28px;
+  }
+
+  .ve-header {
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    padding: 16px 0;
+    margin-bottom: 22px;
+  }
+
+  .ve-header-title {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    text-align: right;
+  }
+
+  .ve-header > button {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .ve-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .ve-sidebar {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .ve-empty-player {
+    min-height: 220px;
+  }
+
+  .ve-player-controls {
+    gap: 6px;
+    padding: 8px;
+  }
+
+  .ve-player-controls button,
+  .ve-player-controls select {
+    padding: 6px 7px;
+    font-size: 10px;
+  }
+
+  .ve-player-controls span {
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 420px) {
+  .ve-section-heading {
+    align-items: flex-start;
+  }
+
+  .ve-section-heading > button {
+    width: 100%;
+  }
+
+  .ve-panel {
+    padding: 15px;
+  }
+
+  .ve-color-row {
+    gap: 8px;
+  }
+
+  .ve-color-row label {
+    font-size: 10px;
+  }
+}
+
+.ve-file-info-header {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+  margin: -18px 0 14px;
+  padding: 8px 12px;
+}
+
+.ve-file-info-header strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ve-file-info-header span {
+  flex-shrink: 0;
+}
+
+@media (max-width: 760px) {
+  .ve-file-info-header {
+    grid-column: 1 / -1;
+    margin-top: -10px;
+    flex-wrap: wrap;
+  }
+
+  .ve-file-info-header strong {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}

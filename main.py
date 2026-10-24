@@ -6,6 +6,7 @@ from src.models import Organization, OrganizationAPIKey
 from pydantic import BaseModel, Field
 import os
 import shutil
+import subprocess
 import tempfile
 import uuid
 from pathlib import Path
@@ -13,8 +14,9 @@ from pathlib import Path
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
-from fastapi import Depends, FastAPI, File, HTTPException, Request, Response, UploadFile
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, Response, UploadFile
 from fastapi.responses import FileResponse
+from starlette.background import BackgroundTask
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
@@ -434,6 +436,237 @@ async def transcribe(
                 except OSError:
                     pass
         await file.close()
+
+
+@app.post("/export-video")
+@limiter.limit("5/minute")
+async def export_video(
+    request: Request,
+    file: UploadFile = File(...),
+    subtitles_json: str = Form(...),
+    style_json: str = Form(...),
+):
+    """Render subtitles permanently into an uploaded video and return an MP4."""
+    video_extensions = {".mp4", ".mov", ".mkv", ".webm", ".avi", ".mpeg", ".mpg"}
+    extension = Path(file.filename or "video.mp4").suffix.lower()
+
+    if extension not in video_extensions:
+        await file.close()
+        raise HTTPException(status_code=400, detail="Unsupported video format.")
+
+    try:
+        subtitles = json.loads(subtitles_json)
+        style = json.loads(style_json)
+    except (json.JSONDecodeError, TypeError):
+        await file.close()
+        raise HTTPException(status_code=400, detail="Invalid subtitle or style data.")
+
+    if not isinstance(subtitles, list) or len(subtitles) > 500:
+        await file.close()
+        raise HTTPException(status_code=400, detail="Subtitle list is invalid.")
+
+    if not isinstance(style, dict):
+        await file.close()
+        raise HTTPException(status_code=400, detail="Subtitle style is invalid.")
+
+    try:
+        font_size = int(style.get("fontSize", 28))
+        if not 14 <= font_size <= 56:
+            raise ValueError
+    except (ValueError, TypeError):
+        await file.close()
+        raise HTTPException(status_code=400, detail="Invalid subtitle font size.")
+
+    def ass_color(value, alpha="00"):
+        import re
+        if not isinstance(value, str) or not re.fullmatch(r"#[0-9a-fA-F]{6}", value):
+            raise ValueError("Invalid color")
+        red, green, blue = value[1:3], value[3:5], value[5:7]
+        return f"&H{alpha}{blue}{green}{red}".upper()
+
+    def ass_time(value):
+        centiseconds = round(float(value) * 100)
+        hours, remainder = divmod(centiseconds, 360000)
+        minutes, remainder = divmod(remainder, 6000)
+        seconds, fraction = divmod(remainder, 100)
+        return f"{hours}:{minutes:02}:{seconds:02}.{fraction:02}"
+
+    def ass_text(value):
+        return (
+            str(value)
+            .replace("\\", r"\\")
+            .replace("{", r"\{")
+            .replace("}", r"\}")
+            .replace("\r\n", r"\N")
+            .replace("\n", r"\N")
+            .replace("\r", r"\N")
+        )
+
+    try:
+        primary_color = ass_color(style.get("fontColor", "#ffffff"))
+        background_color = ass_color(style.get("backgroundColor", "#000000"), alpha="44")
+    except ValueError:
+        await file.close()
+        raise HTTPException(status_code=400, detail="Invalid subtitle color.")
+
+    family = style.get("fontFamily", "Vazirmatn")
+    font_names = {
+        "Vazirmatn": "Vazirmatn UI",
+        "Arial": "Arial",
+        "Tahoma": "Tahoma",
+        "sans-serif": "Arial",
+    }
+    font_name = font_names.get(family, "Vazirmatn UI")
+
+    position = style.get("position", "bottom")
+    alignment = {"bottom": 2, "middle": 5, "top": 8}.get(position)
+    if alignment is None:
+        await file.close()
+        raise HTTPException(status_code=400, detail="Invalid subtitle position.")
+
+    temp_dir = Path(tempfile.mkdtemp(prefix="persian-speech-export-"))
+    input_path = temp_dir / f"input{extension}"
+    subtitle_path = temp_dir / "subtitles.ass"
+    output_path = temp_dir / "output.mp4"
+    total_size = 0
+
+    try:
+        with input_path.open("wb") as output_file:
+            while True:
+                chunk = await file.read(1024 * 1024)
+                if not chunk:
+                    break
+                total_size += len(chunk)
+                if total_size > MAX_FILE_SIZE:
+                    raise HTTPException(
+                        status_code=413,
+                        detail="Video is too large. Maximum size is 25 MB.",
+                    )
+                output_file.write(chunk)
+
+        if total_size == 0:
+            raise HTTPException(status_code=400, detail="The uploaded video is empty.")
+
+        events = []
+        for item in subtitles:
+            if not isinstance(item, dict):
+                raise HTTPException(status_code=400, detail="Invalid subtitle entry.")
+            try:
+                start = float(item["start"])
+                end = float(item["end"])
+                text = str(item.get("text", ""))
+            except (KeyError, TypeError, ValueError):
+                raise HTTPException(status_code=400, detail="Invalid subtitle timing.")
+            import math
+            if (
+                not math.isfinite(start)
+                or not math.isfinite(end)
+                or start < 0
+                or end <= start
+                or len(text) > 2000
+            ):
+                raise HTTPException(status_code=400, detail="Invalid subtitle timing or text.")
+            if text.strip():
+                events.append(
+                    f"Dialogue: 0,{ass_time(start)},{ass_time(end)},Default,,0,0,0,,{ass_text(text)}"
+                )
+
+        if not events:
+            raise HTTPException(status_code=400, detail="Add at least one non-empty subtitle.")
+
+        ass_content = (
+            "[Script Info]\n"
+            "ScriptType: v4.00+\n"
+            "PlayResX: 1920\n"
+            "PlayResY: 1080\n"
+            "WrapStyle: 2\n"
+            "ScaledBorderAndShadow: yes\n\n"
+            "[V4+ Styles]\n"
+            "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, "
+            "OutlineColour, BackColour, Bold, Italic, BorderStyle, Outline, Shadow, "
+            "Alignment, MarginL, MarginR, MarginV, Encoding\n"
+            f"Style: Default,{font_name},{font_size},{primary_color},&H000000FF,"
+            f"&H00000000,{background_color},0,0,3,0,0,{alignment},40,40,30,1\n\n"
+            "[Events]\n"
+            "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
+            + "\n".join(events)
+            + "\n"
+        )
+        subtitle_path.write_text(ass_content, encoding="utf-8")
+
+        bundled_ffmpeg = Path("/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg")
+        ffmpeg_path = (
+            os.getenv("FFMPEG_PATH")
+            or (str(bundled_ffmpeg) if bundled_ffmpeg.is_file() else shutil.which("ffmpeg"))
+        )
+        if not ffmpeg_path:
+            raise HTTPException(status_code=503, detail="FFmpeg is not installed.")
+
+        font_dir = (
+            Path(__file__).parent
+            / "frontend/node_modules/vazirmatn/misc/UI/fonts/ttf"
+        )
+
+        def filter_escape(value):
+            return (
+                str(value)
+                .replace("\\", r"\\")
+                .replace(":", r"\:")
+                .replace("'", r"\'")
+                .replace(",", r"\,")
+                .replace("[", r"\[")
+                .replace("]", r"\]")
+                .replace(" ", r"\ ")
+            )
+
+        video_filter = f"ass={filter_escape(subtitle_path)}"
+        if font_dir.is_dir():
+            video_filter += f":fontsdir={filter_escape(font_dir)}"
+
+        try:
+            result = subprocess.run(
+                [
+                    ffmpeg_path, "-hide_banner", "-loglevel", "error", "-y",
+                    "-i", str(input_path),
+                    "-vf", video_filter,
+                    "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
+                    "-c:a", "aac", "-b:a", "192k",
+                    "-movflags", "+faststart",
+                    str(output_path),
+                ],
+                capture_output=True,
+                text=True,
+                timeout=600,
+                check=False,
+            )
+        except subprocess.TimeoutExpired as exc:
+            raise HTTPException(status_code=504, detail="Video export timed out.") from exc
+
+        if result.returncode != 0 or not output_path.is_file() or output_path.stat().st_size == 0:
+            raise HTTPException(
+                status_code=500,
+                detail="Video export failed. Check FFmpeg and subtitle font support.",
+            )
+
+        download_name = Path(file.filename or "video").stem
+        import re
+        download_name = re.sub(r"[^A-Za-z0-9._-]+", "_", download_name).strip("._") or "video"
+        return FileResponse(
+            path=str(output_path),
+            media_type="video/mp4",
+            filename=f"{download_name}-subtitled.mp4",
+            background=BackgroundTask(shutil.rmtree, str(temp_dir), ignore_errors=True),
+        )
+
+    except HTTPException:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+        raise
+    except Exception as exc:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+        raise HTTPException(status_code=500, detail="Video export failed.") from exc
+    finally:
+        await file.close()
+
 
 @app.get("/media/{public_id}/audio")
 def get_media_audio(

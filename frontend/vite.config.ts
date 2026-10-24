@@ -17,6 +17,7 @@ export default defineConfig({
       '/me': backend,
       '/history': backend,
       '/transcribe': backend,
+      '/export-video': backend,
       '/api/v1': backend,
     },
   },
