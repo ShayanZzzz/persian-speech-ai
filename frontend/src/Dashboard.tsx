@@ -28,8 +28,39 @@ function Dashboard() {
   const [history, setHistory] = useState<HistoryRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [expandedRecord, setExpandedRecord] = useState<string | number | null>(null)
   const [openMenu, setOpenMenu] = useState<string | number | null>(null)
+
+
+  const [selectedIds, setSelectedIds] = useState<Set<string | number>>(new Set())
+  const [bulkExportOpen, setBulkExportOpen] = useState(false)
+useEffect(() => {
+    if (openMenu === null) return
+
+    function handleOutsideClick(event: MouseEvent) {
+      const target = event.target
+      if (!(target instanceof Element)) return
+
+      if (
+        target.closest('.dashboard-export-menu') ||
+        target.closest('.dashboard-menu-trigger')
+      ) {
+        return
+      }
+
+      setOpenMenu(null)
+    }
+
+    document.addEventListener('click', handleOutsideClick)
+    return () => document.removeEventListener('click', handleOutsideClick)
+  }, [openMenu])
+
+  useEffect(() => {
+    const currentIds = new Set(history.map((record) => record.id))
+    setSelectedIds((current) => {
+      const next = new Set([...current].filter((id) => currentIds.has(id)))
+      return next.size === current.size ? current : next
+    })
+  }, [history])
 
   useEffect(() => {
     const token = localStorage.getItem('access_token')
@@ -163,6 +194,76 @@ function Dashboard() {
     setOpenMenu(null)
   }
 
+
+  function toggleSelected(id: string | number) {
+    setSelectedIds((current) => {
+      const next = new Set(current)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function toggleSelectAll() {
+    setSelectedIds((current) =>
+      history.length > 0 && current.size === history.length
+        ? new Set()
+        : new Set(history.map((record) => record.id))
+    )
+  }
+
+  function exportSelected(format: 'txt' | 'json' | 'srt' | 'vtt') {
+    const records = history.filter((record) => selectedIds.has(record.id))
+    if (!records.length) return
+
+    if ((format === 'srt' || format === 'vtt') &&
+        records.some((record) => !record.segments?.length)) {
+      window.alert('برای بعضی از رکوردهای انتخاب‌شده، زمان‌بندی جمله‌ها موجود نیست. فرمت دیگری انتخاب کن.')
+      return
+    }
+
+    let content = ''
+
+    if (format === 'txt') {
+      content = records.map((record) =>
+        `===== ${safeFilename(record.filename)} =====\n\n${record.text || ''}`
+      ).join('\n\n\n')
+    } else if (format === 'json') {
+      content = JSON.stringify(records, null, 2)
+    } else {
+      const timecode = (seconds: number, vtt: boolean) => {
+        const ms = Math.max(0, Math.floor(seconds * 1000))
+        const h = Math.floor(ms / 3600000)
+        const m = Math.floor((ms % 3600000) / 60000)
+        const sec = Math.floor((ms % 60000) / 1000)
+        const milli = ms % 1000
+        const base = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
+        return `${base}${vtt ? '.' : ','}${String(milli).padStart(3, '0')}`
+      }
+
+      let index = 0
+      const blocks = records.flatMap((record) =>
+        (record.segments || []).map((segment) => {
+          index += 1
+          const start = timecode(segment.start, format === 'vtt')
+          const end = timecode(segment.end, format === 'vtt')
+          const number = format === 'srt' ? `${index}\n` : ''
+          return `${number}${start} --> ${end}\n${(segment.text || '').trim()}`
+        })
+      )
+      content = format === 'vtt'
+        ? `WEBVTT\n\n${blocks.join('\n\n')}\n`
+        : `${blocks.join('\n\n')}\n`
+    }
+
+    const mime = format === 'json'
+      ? 'application/json;charset=utf-8'
+      : 'text/plain;charset=utf-8'
+
+    downloadFile(`negar-export-${records.length}-files.${format}`, content, mime)
+    setBulkExportOpen(false)
+  }
+
   return (
     <main className="dashboard-page" dir="rtl">
       <header className="dashboard-header">
@@ -219,11 +320,57 @@ function Dashboard() {
               <Link to="/studio/negar">تبدیل اولین فایل</Link>
             </div>
           ) : (
-            <div className="dashboard-table-wrap">
+            <>
+              {selectedIds.size > 0 && (
+                <div className="dashboard-bulk-toolbar">
+                  <div className="dashboard-bulk-selection">
+                    <span>{selectedIds.size} مورد انتخاب شده</span>
+
+                  </div>
+                  <div className="dashboard-bulk-actions">
+                    <button
+                      type="button"
+                      className="dashboard-bulk-delete"
+                      title="حذف گروهی (هنوز فعال نیست)"
+                      aria-label="حذف گروهی؛ هنوز فعال نیست"
+                      disabled
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M4 7h16M9 7V4h6v3m-9 0 1 13h10l1-13M10 11v5m4-5v5" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      className="dashboard-bulk-export"
+                      onClick={() => setBulkExportOpen(true)}
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 3v12m-4-4 4 4 4-4M5 17v3h14v-3" />
+                      </svg>
+                      خروجی گرفتن
+                    </button>
+                  </div>
+                </div>
+              )}
+              <div className="dashboard-table-wrap">
               <table className="dashboard-table">
                 <thead>
                   <tr>
-                    <th>نام فایل</th>
+                    <th>
+                      <button
+                        type="button"
+                        className={`dashboard-select-record${history.length > 0 && selectedIds.size === history.length ? ' is-selected' : ''}`}
+                        onClick={toggleSelectAll}
+                        title={history.length > 0 && selectedIds.size === history.length ? 'لغو انتخاب همه' : 'انتخاب همه'}
+                        aria-label={history.length > 0 && selectedIds.size === history.length ? 'لغو انتخاب همه' : 'انتخاب همه'}
+                        aria-pressed={history.length > 0 && selectedIds.size === history.length}
+                      >
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="m5 12.5 4.2 4.2L19 7" />
+                        </svg>
+                      </button>
+                      <span style={{ marginRight: '24px' }}>نام فایل</span>
+                    </th>
                     <th>تاریخ بارگذاری</th>
                     <th>مدت فایل</th>
                     <th>مدل</th>
@@ -233,22 +380,45 @@ function Dashboard() {
                 </thead>
                 <tbody>
                   {history.map((record) => (
-                    <tr key={record.id}>
+                    <tr
+                      key={record.id}
+                      className="dashboard-file-row"
+                      onClick={(event) => {
+                        if ((event.target as HTMLElement).closest('button, a, input, select, textarea')) return
+                        navigate(`/dashboard/files/${encodeURIComponent(String(record.id))}`)
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.target !== event.currentTarget) return
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault()
+                          navigate(`/dashboard/files/${encodeURIComponent(String(record.id))}`)
+                        }
+                      }}
+                      tabIndex={0}
+                      aria-label={`نمایش متن فایل ${record.filename}`}
+                    >
                       <td data-label="نام فایل">
                         <button
-                          className="dashboard-filename"
-                          onClick={() => setExpandedRecord(
-                            expandedRecord === record.id ? null : record.id
-                          )}
+                          type="button"
+                          className={`dashboard-select-record${selectedIds.has(record.id) ? ' is-selected' : ''}`}
+                          aria-label={selectedIds.has(record.id) ? 'لغو انتخاب فایل' : 'انتخاب فایل'}
+                          aria-pressed={selectedIds.has(record.id)}
+                          onClick={(event) => { event.stopPropagation(); toggleSelected(record.id) }}
                         >
-                          <span className="dashboard-file-icon">TXT</span>
-                          <span>{record.filename || 'فایل بدون نام'}</span>
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="m5 12.5 4.2 4.2L19 7" />
+                          </svg>
                         </button>
-                        {expandedRecord === record.id && (
-                          <div className="dashboard-transcript">
-                            {record.text || 'متنی ثبت نشده است.'}
-                          </div>
-                        )}
+                        <button
+                          type="button"
+                          className="dashboard-filename"
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            navigate(`/dashboard/files/${encodeURIComponent(String(record.id))}`)
+                          }}
+                        >
+                          <span>{(record.filename || 'فایل بدون نام').replace(/\.[^.]+$/, '')}</span>
+                        </button>
                       </td>
                       <td data-label="تاریخ بارگذاری">{formatDate(record.created_at)}</td>
                       <td data-label="مدت فایل">{formatDuration(record.duration_seconds)}</td>
@@ -267,7 +437,7 @@ function Dashboard() {
                           className="dashboard-menu-trigger"
                           aria-label={`عملیات ${record.filename}`}
                           aria-expanded={openMenu === record.id}
-                          onClick={() => setOpenMenu(openMenu === record.id ? null : record.id)}
+                          onClick={(event) => { event.stopPropagation(); setOpenMenu(openMenu === record.id ? null : record.id) }}
                         >
                           ⋯
                         </button>
@@ -284,8 +454,8 @@ function Dashboard() {
                               onClick={() => exportRecord(record, 'vtt')}
                             >دانلود زیرنویس VTT</button>
                             <button onClick={() => {
-                              setExpandedRecord(record.id)
                               setOpenMenu(null)
+                              navigate(`/dashboard/files/${encodeURIComponent(String(record.id))}`)
                             }}>نمایش متن</button>
                           </div>
                         )}
@@ -295,9 +465,50 @@ function Dashboard() {
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </section>
       </section>
+
+      {bulkExportOpen && (
+        <div
+          className="dashboard-modal-backdrop"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setBulkExportOpen(false)
+          }}
+        >
+          <section
+            className="dashboard-export-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="dashboard-bulk-export-title"
+          >
+            <button
+              type="button"
+              className="dashboard-modal-close"
+              aria-label="بستن پنجره"
+              onClick={() => setBulkExportOpen(false)}
+            >×</button>
+            <span className="dashboard-eyebrow">خروجی گروهی</span>
+            <h2 id="dashboard-bulk-export-title">خروجی فایل‌های انتخاب‌شده</h2>
+            <p>{selectedIds.size} رکورد در یک فایل خروجی قرار می‌گیرند.</p>
+            <div className="dashboard-modal-formats">
+              <button type="button" onClick={() => exportSelected('txt')}>TXT <span>متن ساده</span></button>
+              <button type="button" onClick={() => exportSelected('json')}>JSON <span>اطلاعات ساختاریافته</span></button>
+              <button
+                type="button"
+                disabled={history.filter((record) => selectedIds.has(record.id)).some((record) => !record.segments?.length)}
+                onClick={() => exportSelected('srt')}
+              >SRT <span>زیرنویس</span></button>
+              <button
+                type="button"
+                disabled={history.filter((record) => selectedIds.has(record.id)).some((record) => !record.segments?.length)}
+                onClick={() => exportSelected('vtt')}
+              >VTT <span>زیرنویس وب</span></button>
+            </div>
+          </section>
+        </div>
+      )}
 
       <footer className="dashboard-footer">
         NEGAR <span>·</span> فضای کار شخصی شما

@@ -1,10 +1,12 @@
 import { useRef, useState } from 'react'
 import { useAudioPlayer } from './AudioPlayer'
 import './Studio.css'
+import { useNavigate } from 'react-router-dom'
 
 type Language = 'fa' | 'en'
 
 function Studio() {
+  const navigate = useNavigate()
   const { playLocalFile } = useAudioPlayer()
   const inputRef = useRef<HTMLInputElement>(null)
   const [file, setFile] = useState<File | null>(null)
@@ -17,12 +19,21 @@ function Studio() {
   const [result, setResult] = useState<{ text: string; language?: string; files_remaining?: number } | null>(null)
 
   const acceptFile = (selectedFile?: File) => {
-    if (selectedFile) {
-      setFile(selectedFile)
-      playLocalFile(selectedFile)
-      setError('')
-      setResult(null)
+    if (!selectedFile) return
+
+    const isVideo =
+      selectedFile.type.startsWith('video/') ||
+      /\.(mp4|mov|webm|mkv|avi|m4v)$/i.test(selectedFile.name)
+
+    if (isVideo) {
+      navigate('/studio/video', { state: { file: selectedFile } })
+      return
     }
+
+    setFile(selectedFile)
+    playLocalFile(selectedFile)
+    setError('')
+    setResult(null)
   }
 
   const transcribeFile = async () => {

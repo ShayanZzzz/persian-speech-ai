@@ -243,6 +243,26 @@
   border: 1px solid var(--dash-line);
   border-radius: 16px;
   background: var(--dash-surface, #fff);
+  box-shadow:
+    0 2px 4px rgba(24, 26, 24, 0.025),
+    0 12px 32px rgba(24, 26, 24, 0.055),
+    0 1px 0 rgba(255, 255, 255, 0.8) inset;
+  transition: box-shadow 180ms ease, transform 180ms ease;
+}
+
+.dashboard-table-wrap:hover {
+  box-shadow:
+    0 4px 8px rgba(24, 26, 24, 0.035),
+    0 18px 40px rgba(24, 26, 24, 0.075),
+    0 1px 0 rgba(255, 255, 255, 0.8) inset;
+}
+
+.dashboard-table tbody tr {
+  transition: background-color 160ms ease;
+}
+
+.dashboard-table tbody tr:hover {
+  background: rgba(24, 26, 24, 0.018);
 }
 
 .dashboard-table {
@@ -295,8 +315,21 @@
   justify-content: center;
   width: 36px;
   height: 36px;
+  border: 1px solid rgba(24, 26, 24, 0.07);
   border-radius: 10px;
-  font-size: 10px;
+  background: linear-gradient(145deg, #fff, var(--dash-soft, #f8f8f3));
+  box-shadow:
+    0 2px 4px rgba(24, 26, 24, 0.045),
+    0 1px 0 rgba(255, 255, 255, 0.9) inset;
+}
+
+.dashboard-table .dashboard-file-icon svg {
+  width: 19px;
+  height: 19px;
+  stroke: var(--dash-muted);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .dashboard-transcript {
@@ -343,7 +376,8 @@
 .dashboard-export-menu {
   position: absolute;
   z-index: 5;
-  inset-inline-start: 10px;
+  inset-inline-start: auto;
+  inset-inline-end: 10px;
   top: calc(100% - 4px);
   display: grid;
   min-width: 190px;
@@ -432,4 +466,241 @@
     padding: 14px;
     gap: 10px;
   }
+}
+
+
+/* Bulk selection and export */
+.dashboard-bulk-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--dash-line);
+  border-radius: 14px;
+  background: var(--dash-surface, #fff);
+  box-shadow: 0 8px 24px rgba(24, 26, 24, 0.055);
+}
+
+.dashboard-bulk-selection,
+.dashboard-bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dashboard-bulk-selection {
+  color: var(--dash-ink);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.dashboard-bulk-selection button {
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--dash-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.dashboard-bulk-selection button:hover {
+  background: var(--dash-soft, #f8f8f3);
+  color: var(--dash-ink);
+}
+
+.dashboard-select-record {
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 29px;
+  height: 29px;
+  margin-inline-end: 9px;
+  padding: 0;
+  border: 1px solid var(--dash-line);
+  border-radius: 9px;
+  background: var(--dash-surface, #fff);
+  color: transparent;
+  cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.dashboard-select-record svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.dashboard-select-record:hover {
+  border-color: var(--dash-muted);
+  background: var(--dash-soft, #f8f8f3);
+}
+
+.dashboard-select-record.is-selected {
+  border-color: var(--dash-ink);
+  background: var(--dash-ink);
+  color: #fff;
+  box-shadow: 0 2px 5px rgba(24, 26, 24, 0.16);
+}
+
+.dashboard-bulk-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 7px 10px;
+  border: 1px solid var(--dash-line);
+  border-radius: 9px;
+  background: var(--dash-surface, #fff);
+  color: var(--dash-ink);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.dashboard-bulk-actions svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.dashboard-bulk-actions .dashboard-bulk-delete {
+  width: 38px;
+  padding: 7px;
+  color: #a52e2e;
+}
+
+.dashboard-bulk-actions .dashboard-bulk-delete:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.dashboard-bulk-actions .dashboard-bulk-export {
+  background: var(--dash-ink);
+  border-color: var(--dash-ink);
+  color: #fff;
+}
+
+.dashboard-modal-backdrop {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(17, 20, 16, 0.42);
+  backdrop-filter: blur(5px);
+}
+
+.dashboard-export-modal {
+  position: relative;
+  width: min(100%, 440px);
+  padding: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 20px;
+  background: var(--dash-surface, #fff);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.2);
+}
+
+.dashboard-export-modal h2 {
+  margin: 8px 0;
+  color: var(--dash-ink);
+  font-size: 20px;
+}
+
+.dashboard-export-modal p {
+  margin: 0 0 20px;
+  color: var(--dash-muted);
+  font-size: 12px;
+  line-height: 1.9;
+}
+
+.dashboard-modal-close {
+  position: absolute;
+  top: 12px;
+  inset-inline-end: 14px;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--dash-muted);
+  font-size: 25px;
+  cursor: pointer;
+}
+
+.dashboard-modal-formats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.dashboard-modal-formats button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid var(--dash-line);
+  border-radius: 12px;
+  background: var(--dash-surface, #fff);
+  color: var(--dash-ink);
+  text-align: right;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dashboard-modal-formats button:hover:not(:disabled) {
+  border-color: var(--dash-ink);
+  box-shadow: 0 4px 12px rgba(24, 26, 24, 0.06);
+}
+
+.dashboard-modal-formats button span {
+  color: var(--dash-muted);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.dashboard-modal-formats button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+  .dashboard-bulk-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .dashboard-bulk-actions {
+    width: 100%;
+  }
+
+  .dashboard-export-modal {
+    padding: 24px 18px;
+  }
+}
+
+
+
+/* Keep the file-selection control and filename consistently spaced. */
+.dashboard-table td[data-label="نام فایل"] {
+  white-space: normal;
+}
+
+.dashboard-table td[data-label="نام فایل"] .dashboard-filename {
+  margin-inline-start: 24px;
 }
