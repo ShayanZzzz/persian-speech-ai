@@ -4,6 +4,7 @@ import secrets
 from src.api_keys import create_api_key, revoke_api_key
 from src.models import Organization, OrganizationAPIKey
 from pydantic import BaseModel, Field
+import math
 import os
 import shutil
 import subprocess
@@ -547,6 +548,28 @@ async def export_video(
         if total_size == 0:
             raise HTTPException(status_code=400, detail="The uploaded video is empty.")
 
+        bundled_ffprobe = Path("/opt/homebrew/opt/ffmpeg-full/bin/ffprobe")
+        ffprobe_path = os.getenv("FFPROBE_PATH") or (str(bundled_ffprobe) if bundled_ffprobe.is_file() else shutil.which("ffprobe"))
+        if not ffprobe_path:
+            raise HTTPException(status_code=503, detail="FFprobe is not installed.")
+        try:
+            probe_result = subprocess.run([ffprobe_path, "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "json", str(input_path)], capture_output=True, text=True, timeout=20, check=True)
+            streams = json.loads(probe_result.stdout).get("streams", [])
+            video_width = int(streams[0]["width"])
+            video_height = int(streams[0]["height"])
+            if video_width <= 0 or video_height <= 0:
+                raise ValueError
+        except (subprocess.SubprocessError, json.JSONDecodeError, KeyError, IndexError, TypeError, ValueError):
+            raise HTTPException(status_code=400, detail="Could not read video dimensions.")
+        preview_video_height = style.get("previewVideoHeight")
+        try:
+            preview_video_height = float(preview_video_height)
+            if not math.isfinite(preview_video_height) or preview_video_height <= 0:
+                raise ValueError
+        except (ValueError, TypeError):
+            raise HTTPException(status_code=400, detail="Invalid preview video height.")
+
+        ass_font_size = max(1, min(1000, round(font_size * video_height / preview_video_height)))
         events = []
         for item in subtitles:
             if not isinstance(item, dict):
@@ -557,7 +580,6 @@ async def export_video(
                 text = str(item.get("text", ""))
             except (KeyError, TypeError, ValueError):
                 raise HTTPException(status_code=400, detail="Invalid subtitle timing.")
-            import math
             if (
                 not math.isfinite(start)
                 or not math.isfinite(end)
@@ -577,15 +599,15 @@ async def export_video(
         ass_content = (
             "[Script Info]\n"
             "ScriptType: v4.00+\n"
-            "PlayResX: 1920\n"
-            "PlayResY: 1080\n"
+            f"PlayResX: {video_width}\n"
+            f"PlayResY: {video_height}\n"
             "WrapStyle: 2\n"
             "ScaledBorderAndShadow: yes\n\n"
             "[V4+ Styles]\n"
             "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, "
             "OutlineColour, BackColour, Bold, Italic, BorderStyle, Outline, Shadow, "
             "Alignment, MarginL, MarginR, MarginV, Encoding\n"
-            f"Style: Default,{font_name},{font_size},{primary_color},&H000000FF,"
+            f"Style: Default,{font_name},{ass_font_size},{primary_color},&H000000FF,"
             f"&H00000000,{background_color},0,0,3,0,0,{alignment},40,40,30,1\n\n"
             "[Events]\n"
             "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
@@ -645,7 +667,7 @@ async def export_video(
         if result.returncode != 0 or not output_path.is_file() or output_path.stat().st_size == 0:
             raise HTTPException(
                 status_code=500,
-                detail="Video export failed. Check FFmpeg and subtitle font support.",
+                detail="Video export failed.",
             )
 
         download_name = Path(file.filename or "video").stem

@@ -261,6 +261,17 @@ export default function VideoEditor() {
     setMessage('در حال ساخت ویدیوی نهایی؛ بسته به طول ویدیو ممکن است زمان ببرد...')
 
     try {
+      const video = videoRef.current
+      const player = video?.parentElement
+
+      const previewVideoHeight =
+        video && player && video.videoWidth > 0 && video.videoHeight > 0
+          ? Math.min(
+              player.clientWidth * (video.videoHeight / video.videoWidth),
+              player.clientHeight,
+            )
+          : 0
+
       const form = new FormData()
       form.append('file', file, file.name)
       form.append('subtitles_json', JSON.stringify(subtitles))
@@ -270,6 +281,7 @@ export default function VideoEditor() {
         fontColor,
         backgroundColor,
         position,
+        previewVideoHeight,
       }))
 
       const response = await fetch('/export-video', {
