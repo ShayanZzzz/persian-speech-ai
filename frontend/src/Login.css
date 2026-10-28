@@ -1,9 +1,12 @@
 .login-page {
-  --login-bg: #f5f5ef;
-  --login-ink: #202820;
-  --login-muted: #777e74;
-  --login-line: #dedfd5;
-  --login-accent: #c9f36b;
+  --login-bg: #f6f7f9;
+  --login-surface: #ffffff;
+  --login-ink: #202532;
+  --login-muted: #737b8b;
+  --login-line: #e2e5eb;
+  --login-accent: #6158d9;
+  --login-accent-hover: #5047c7;
+  --login-accent-soft: #eeedff;
   min-height: 100vh;
   padding: 0 6%;
   display: flex;
@@ -325,6 +328,271 @@
 
 @media (prefers-reduced-motion: reduce) {
   .login-form input,
+  .login-submit {
+    transition: none;
+  }
+}
+
+
+/* Updated Shayan Hub / Negar visual system */
+.login-page {
+  background:
+    radial-gradient(ellipse at 15% 42%, rgba(97, 88, 217, 0.075), transparent 34%),
+    var(--login-bg);
+  color: var(--login-ink);
+}
+
+.login-brand-mark {
+  border-radius: 12px;
+  background: var(--login-accent);
+  color: #fff;
+  box-shadow: 0 5px 14px rgba(97, 88, 217, 0.2);
+}
+
+.login-brand-mark span {
+  color: #d9d6ff;
+}
+
+.login-back {
+  transition: color 150ms ease;
+}
+
+.login-back:hover {
+  color: var(--login-accent);
+}
+
+.login-layout {
+  width: min(100%, 1080px);
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 440px);
+  gap: clamp(36px, 7vw, 96px);
+}
+
+.login-eyebrow,
+.login-card-kicker {
+  color: var(--login-accent);
+  font-family: var(--mono), monospace;
+}
+
+.login-story h1 {
+  font-weight: 750;
+  line-height: 1.48;
+}
+
+.login-story h1 span {
+  color: var(--login-accent);
+}
+
+.login-story > p {
+  color: var(--login-muted);
+}
+
+.login-status-dot {
+  background: #31a879;
+  box-shadow: 0 0 0 4px rgba(49, 168, 121, 0.12);
+}
+
+.login-card {
+  border-color: var(--login-line);
+  border-radius: 22px;
+  background: var(--login-surface);
+  box-shadow: 0 24px 70px rgba(32, 37, 50, 0.075);
+}
+
+.login-tabs {
+  border-radius: 11px;
+  background: #f6f7fa;
+}
+
+.login-tabs button {
+  border-radius: 7px;
+}
+
+.login-tabs button.active {
+  color: var(--login-accent);
+}
+
+.login-form input {
+  border-color: var(--login-line);
+  border-radius: 9px;
+}
+
+.login-form input:focus {
+  border-color: var(--login-accent);
+  box-shadow: 0 0 0 3px rgba(97, 88, 217, 0.12);
+}
+
+.login-password-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.login-password-row label {
+  margin-bottom: 8px;
+}
+
+.login-forgot {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--login-accent);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.login-forgot:hover {
+  color: var(--login-accent-hover);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.login-submit {
+  border-radius: 9px;
+  background: var(--login-accent);
+  transition: background 150ms ease, transform 150ms ease, box-shadow 150ms ease;
+}
+
+.login-submit:hover:not(:disabled) {
+  background: var(--login-accent-hover);
+  box-shadow: 0 7px 18px rgba(97, 88, 217, 0.2);
+  transform: translateY(-1px);
+}
+
+.login-submit span {
+  color: #e1deff;
+}
+
+.login-message.error {
+  color: #b42332;
+}
+
+.login-message.success {
+  color: #21845d;
+}
+
+.login-message.info {
+  padding: 9px 11px;
+  border: 1px solid #dedbff;
+  border-radius: 8px;
+  background: var(--login-accent-soft);
+  color: #5047b7;
+}
+
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 23px 0 16px;
+  color: #9097a5;
+  font-size: 10px;
+}
+
+.login-divider::before,
+.login-divider::after {
+  height: 1px;
+  flex: 1;
+  background: var(--login-line);
+  content: "";
+}
+
+.login-socials {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.login-social-button {
+  min-width: 0;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--login-line);
+  border-radius: 9px;
+  background: #fff;
+  color: var(--login-ink);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0.72;
+  cursor: not-allowed;
+}
+
+.login-social-button svg {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+}
+
+.login-social-button .login-apple-icon {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.login-social-button small {
+  display: none;
+  color: var(--login-muted);
+  font-size: 9px;
+  font-weight: 500;
+}
+
+.login-terms {
+  color: #858c9a;
+}
+
+.login-footer {
+  color: #8a91a0;
+  font-family: var(--mono), "Vazirmatn", monospace;
+}
+
+@media (max-width: 760px) {
+  .login-layout {
+    width: min(100%, 480px);
+    grid-template-columns: 1fr;
+    gap: 27px;
+  }
+
+  .login-card {
+    padding: 25px 20px;
+  }
+}
+
+@media (max-width: 390px) {
+  .login-page {
+    padding: 0 15px;
+  }
+
+  .login-brand {
+    gap: 8px;
+    font-size: 11px;
+  }
+
+  .login-back {
+    font-size: 11px;
+  }
+
+  .login-socials {
+    grid-template-columns: 1fr;
+  }
+
+  .login-social-button {
+    justify-content: flex-start;
+    padding-inline: 14px;
+  }
+
+  .login-social-button small {
+    display: inline;
+    margin-right: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-back,
   .login-submit {
     transition: none;
   }
