@@ -9,6 +9,7 @@ type StudioHeaderProps = {
   darkMode?: boolean
   onToggleTheme?: () => void
   collapsible?: boolean
+  brandContent?: ReactNode
   children?: ReactNode
 }
 
@@ -19,6 +20,7 @@ export default function StudioHeader({
   darkMode,
   onToggleTheme,
   collapsible = false,
+  brandContent,
   children,
 }: StudioHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false)
@@ -99,10 +101,12 @@ export default function StudioHeader({
           </button>
         )}
 
-      <Link className="studio-header-brand" to="/" aria-label="Shayan Hub">
-        <span className="studio-header-mark">S<span>.</span></span>
-        <span>SHAYAN<span className="studio-header-muted">HUB</span></span>
-      </Link>
+      {brandContent ?? (
+        <Link className="studio-header-brand" to="/" aria-label="Shayan Hub">
+          <span className="studio-header-mark">S<span>.</span></span>
+          <span>SHAYAN<span className="studio-header-muted">HUB</span></span>
+        </Link>
+      )}
       </div>
 
       {children && <div className="studio-header-extra">{children}</div>}

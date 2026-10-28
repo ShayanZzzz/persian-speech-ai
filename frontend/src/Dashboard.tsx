@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import './Dashboard.css'
+import StudioHeader from './StudioHeader'
 
 type User = {
   id: number | string
@@ -86,11 +87,11 @@ useEffect(() => {
         }
 
         if (!userResponse.ok) {
-          throw new Error('دریافت مشخصات حساب ناموفق بود.')
+          throw new Error('account_load_failed')
         }
 
         if (!historyResponse.ok) {
-          throw new Error('دریافت تاریخچه ناموفق بود.')
+          throw new Error('history_load_failed')
         }
 
         const userData = await userResponse.json()
@@ -99,7 +100,7 @@ useEffect(() => {
         setUser(userData)
         setHistory(Array.isArray(historyData) ? historyData : [])
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'خطا در ارتباط با سرور.')
+        setError(err instanceof Error ? err.message : 'server_connection_failed')
       } finally {
         setLoading(false)
       }
@@ -117,7 +118,7 @@ useEffect(() => {
     if (!value) return '—'
     const date = new Date(value)
     if (Number.isNaN(date.getTime())) return value
-    return new Intl.DateTimeFormat('fa-IR', {
+    return new Intl.DateTimeFormat(fa ? 'fa-IR' : 'en-US', {
       dateStyle: 'medium',
       timeStyle: 'short',
     }).format(date)
@@ -155,7 +156,7 @@ useEffect(() => {
     const segments = record.segments || []
 
     if ((format === 'srt' || format === 'vtt') && segments.length === 0) {
-      window.alert('برای این تبدیل، زمان‌بندی جمله‌ها ذخیره نشده است؛ خروجی TXT یا JSON را انتخاب کن.')
+      window.alert(fa ? 'زمان‌بندی جمله‌ها ذخیره نشده است؛ خروجی TXT یا JSON را انتخاب کن.' : 'Segment timing is unavailable. Choose TXT or JSON instead.')
       return
     }
 
@@ -218,7 +219,7 @@ useEffect(() => {
 
     if ((format === 'srt' || format === 'vtt') &&
         records.some((record) => !record.segments?.length)) {
-      window.alert('برای بعضی از رکوردهای انتخاب‌شده، زمان‌بندی جمله‌ها موجود نیست. فرمت دیگری انتخاب کن.')
+      window.alert(fa ? 'برای بعضی از فایل‌های انتخاب‌شده زمان‌بندی جمله‌ها موجود نیست. فرمت دیگری انتخاب کن.' : 'Some selected files have no segment timing. Choose another format.')
       return
     }
 
@@ -264,75 +265,89 @@ useEffect(() => {
     setBulkExportOpen(false)
   }
 
-  return (
-    <main className="dashboard-page" dir="rtl">
-      <header className="dashboard-header">
-        <Link className="dashboard-brand" to="/">
-          <span className="dashboard-brand-mark">N<span>.</span></span>
-          <span>NEGAR</span>
-        </Link>
+  const [lang, setLang] = useState<'fa' | 'en'>('fa')
+  const [darkMode, setDarkMode] = useState(
+    () => (localStorage.getItem('negar-theme') ?? 'light') === 'dark',
+  )
+  const fa = lang === 'fa'
 
-        <div className="dashboard-account">
-          <div className="dashboard-avatar">
-            {user?.email?.charAt(0).toUpperCase() || '؟'}
+  const toggleTheme = () => {
+    const next = !darkMode
+    setDarkMode(next)
+    localStorage.setItem('negar-theme', next ? 'dark' : 'light')
+  }
+
+  return (
+    <main className={`dashboard-page ${darkMode ? "dashboard-dark" : ""}`} dir={fa ? "rtl" : "ltr"}>
+      <StudioHeader
+        title={fa ? 'داشبورد' : 'Dashboard'}
+        lang={lang}
+        onToggleLanguage={() => setLang(fa ? "en" : "fa")}
+        darkMode={darkMode}
+        onToggleTheme={toggleTheme}
+        brandContent={
+          <div className="dashboard-account">
+            <div className="dashboard-avatar">
+              {user?.email?.charAt(0).toUpperCase() || '؟'}
+            </div>
+            <div className="dashboard-account-info">
+              <strong>{user?.email || (fa ? 'حساب کاربری' : 'Account')}</strong>
+              <span>{fa ? 'حساب ثبت‌نام‌شده' : 'Registered account'}</span>
+            </div>
+            <button className="dashboard-logout" onClick={logout}>
+              {fa ? 'خروج' : 'Log out'}
+            </button>
           </div>
-          <div className="dashboard-account-info">
-            <strong>{user?.email || 'حساب کاربری'}</strong>
-            <span>حساب ثبت‌نام‌شده</span>
-          </div>
-          <button className="dashboard-logout" onClick={logout}>
-            خروج
-          </button>
-        </div>
-      </header>
+        }
+      />
 
       <section className="dashboard-content">
         <div className="dashboard-welcome">
-          <span className="dashboard-eyebrow">فضای کار شخصی</span>
-          <h1>سلام، خوش برگشتی.</h1>
-          <p>تبدیل‌ها و متن‌های ذخیره‌شده‌ات را از اینجا مدیریت کن.</p>
+          <span className="dashboard-eyebrow">{fa ? "فضای کار شخصی" : "PERSONAL WORKSPACE"}</span>
+          <h1>{fa ? 'سلام، خوش برگشتی.' : 'Welcome back.'}</h1>
+          <p>{fa ? 'تبدیل‌ها و متن‌های ذخیره‌شده‌ات را از اینجا مدیریت کن.' : 'Manage your transcriptions and saved files in one place.'}</p>
           <Link className="dashboard-primary" to="/studio/negar">
-            شروع تبدیل جدید <span>↗</span>
+            {fa ? 'شروع تبدیل جدید' : 'New transcription'} <span>↗</span>
           </Link>
         </div>
 
         <section className="dashboard-history">
           <div className="dashboard-section-heading">
             <div>
-              <span className="dashboard-eyebrow">فایل‌های شما</span>
-              <h2>تاریخچهٔ تبدیل‌ها</h2>
+              <span className="dashboard-eyebrow">{fa ? "فایل‌های شما" : "YOUR FILES"}</span>
+              <h2>{fa ? 'تاریخچهٔ تبدیل‌ها' : 'Transcription history'}</h2>
             </div>
-            <span className="dashboard-count">{history.length} مورد</span>
+            <span className="dashboard-count">{history.length} {fa ? 'مورد' : history.length === 1 ? 'file' : 'files'}</span>
           </div>
 
           {loading ? (
-            <div className="dashboard-empty">در حال دریافت اطلاعات حساب…</div>
+            <div className="dashboard-empty">{fa ? 'در حال دریافت اطلاعات حساب…' : 'Loading your account…'}</div>
           ) : error ? (
             <div className="dashboard-empty dashboard-error">
-              {error}
-              <button onClick={() => window.location.reload()}>تلاش دوباره</button>
+              {fa ? ({ account_load_failed: 'دریافت مشخصات حساب ناموفق بود.', history_load_failed: 'دریافت تاریخچه ناموفق بود.', server_connection_failed: 'خطا در ارتباط با سرور.' } as Record<string, string>)[error] || error : ({ account_load_failed: 'Could not load account details.', history_load_failed: 'Could not load transcription history.', server_connection_failed: 'Could not connect to the server.' } as Record<string, string>)[error] || error}
+              <button onClick={() => window.location.reload()}>{fa ? 'تلاش دوباره' : 'Try again'}</button>
             </div>
           ) : history.length === 0 ? (
             <div className="dashboard-empty">
               <span className="dashboard-empty-icon">↗</span>
-              <h3>هنوز تبدیلی ثبت نشده</h3>
-              <p>بعد از اولین تبدیل، تاریخچهٔ فایل‌هایت را اینجا می‌بینی.</p>
-              <Link to="/studio/negar">تبدیل اولین فایل</Link>
+              <h3>{fa ? 'هنوز تبدیلی ثبت نشده' : 'No transcriptions yet'}</h3>
+              <p>{fa ? 'بعد از اولین تبدیل، تاریخچهٔ فایل‌هایت را اینجا می‌بینی.' : 'Your saved transcriptions will appear here after your first upload.'}</p>
+              <Link to="/studio/negar">{fa ? 'تبدیل اولین فایل' : 'Transcribe your first file'}</Link>
             </div>
           ) : (
             <>
               {selectedIds.size > 0 && (
                 <div className="dashboard-bulk-toolbar">
                   <div className="dashboard-bulk-selection">
-                    <span>{selectedIds.size} مورد انتخاب شده</span>
+                    <span>{selectedIds.size} {fa ? 'مورد انتخاب شده' : 'selected'}</span>
 
                   </div>
                   <div className="dashboard-bulk-actions">
                     <button
                       type="button"
                       className="dashboard-bulk-delete"
-                      title="حذف گروهی (هنوز فعال نیست)"
-                      aria-label="حذف گروهی؛ هنوز فعال نیست"
+                      title={fa ? "حذف گروهی (هنوز فعال نیست)" : "Bulk delete (not available yet)"}
+                      aria-label={fa ? "حذف گروهی؛ هنوز فعال نیست" : "Bulk delete; not available yet"}
                       disabled
                     >
                       <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -347,7 +362,7 @@ useEffect(() => {
                       <svg viewBox="0 0 24 24" aria-hidden="true">
                         <path d="M12 3v12m-4-4 4 4 4-4M5 17v3h14v-3" />
                       </svg>
-                      خروجی گرفتن
+                      {fa ? 'خروجی گرفتن' : 'Export selected'}
                     </button>
                   </div>
                 </div>
@@ -361,21 +376,21 @@ useEffect(() => {
                         type="button"
                         className={`dashboard-select-record${history.length > 0 && selectedIds.size === history.length ? ' is-selected' : ''}`}
                         onClick={toggleSelectAll}
-                        title={history.length > 0 && selectedIds.size === history.length ? 'لغو انتخاب همه' : 'انتخاب همه'}
-                        aria-label={history.length > 0 && selectedIds.size === history.length ? 'لغو انتخاب همه' : 'انتخاب همه'}
+                        title={history.length > 0 && selectedIds.size === history.length ? (fa ? 'لغو انتخاب همه' : 'Deselect all') : (fa ? 'انتخاب همه' : 'Select all')}
+                        aria-label={history.length > 0 && selectedIds.size === history.length ? (fa ? 'لغو انتخاب همه' : 'Deselect all') : (fa ? 'انتخاب همه' : 'Select all')}
                         aria-pressed={history.length > 0 && selectedIds.size === history.length}
                       >
                         <svg viewBox="0 0 24 24" aria-hidden="true">
                           <path d="m5 12.5 4.2 4.2L19 7" />
                         </svg>
                       </button>
-                      <span style={{ marginRight: '24px' }}>نام فایل</span>
+                      <span className="dashboard-file-column-label">{fa ? 'نام فایل' : 'File name'}</span>
                     </th>
-                    <th>تاریخ بارگذاری</th>
-                    <th>مدت فایل</th>
-                    <th>مدل</th>
-                    <th>وضعیت</th>
-                    <th aria-label="عملیات"></th>
+                    <th>{fa ? 'تاریخ بارگذاری' : 'Uploaded'}</th>
+                    <th>{fa ? 'مدت فایل' : 'Duration'}</th>
+                    <th>{fa ? 'مدل' : 'Model'}</th>
+                    <th>{fa ? 'وضعیت' : 'Status'}</th>
+                    <th aria-label={fa ? "عملیات" : "Actions"}></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -395,13 +410,13 @@ useEffect(() => {
                         }
                       }}
                       tabIndex={0}
-                      aria-label={`نمایش متن فایل ${record.filename}`}
+                      aria-label={fa ? `نمایش متن فایل ${record.filename}` : `View transcription for ${record.filename}`}
                     >
-                      <td data-label="نام فایل">
+                      <td data-label={fa ? "نام فایل" : "File name"}>
                         <button
                           type="button"
                           className={`dashboard-select-record${selectedIds.has(record.id) ? ' is-selected' : ''}`}
-                          aria-label={selectedIds.has(record.id) ? 'لغو انتخاب فایل' : 'انتخاب فایل'}
+                          aria-label={selectedIds.has(record.id) ? (fa ? 'لغو انتخاب فایل' : 'Deselect file') : (fa ? 'انتخاب فایل' : 'Select file')}
                           aria-pressed={selectedIds.has(record.id)}
                           onClick={(event) => { event.stopPropagation(); toggleSelected(record.id) }}
                         >
@@ -417,25 +432,25 @@ useEffect(() => {
                             navigate(`/dashboard/files/${encodeURIComponent(String(record.id))}`)
                           }}
                         >
-                          <span>{(record.filename || 'فایل بدون نام').replace(/\.[^.]+$/, '')}</span>
+                          <span>{(record.filename || (fa ? 'فایل بدون نام' : 'Untitled file')).replace(/\.[^.]+$/, '')}</span>
                         </button>
                       </td>
-                      <td data-label="تاریخ بارگذاری">{formatDate(record.created_at)}</td>
-                      <td data-label="مدت فایل">{formatDuration(record.duration_seconds)}</td>
-                      <td data-label="مدل">
+                      <td data-label={fa ? "تاریخ بارگذاری" : "Uploaded"}>{formatDate(record.created_at)}</td>
+                      <td data-label={fa ? "مدت فایل" : "Duration"}>{formatDuration(record.duration_seconds)}</td>
+                      <td data-label={fa ? "مدل" : "Model"}>
                         <span className="dashboard-model" title="Whisper Base">
                           <span aria-hidden="true">🐋</span> Whisper Base
                         </span>
                       </td>
-                      <td data-label="وضعیت">
+                      <td data-label={fa ? "وضعیت" : "Status"}>
                         <span className="dashboard-success">
                           <span aria-hidden="true">✓</span> موفق
                         </span>
                       </td>
-                      <td data-label="عملیات" className="dashboard-actions-cell">
+                      <td data-label={fa ? "عملیات" : "Actions"} className="dashboard-actions-cell">
                         <button
                           className="dashboard-menu-trigger"
-                          aria-label={`عملیات ${record.filename}`}
+                          aria-label={fa ? `عملیات ${record.filename}` : `Actions for ${record.filename}`}
                           aria-expanded={openMenu === record.id}
                           onClick={(event) => { event.stopPropagation(); setOpenMenu(openMenu === record.id ? null : record.id) }}
                         >
@@ -443,20 +458,20 @@ useEffect(() => {
                         </button>
                         {openMenu === record.id && (
                           <div className="dashboard-export-menu">
-                            <button onClick={() => exportRecord(record, 'txt')}>دانلود متن TXT</button>
-                            <button onClick={() => exportRecord(record, 'json')}>دانلود JSON</button>
+                            <button onClick={() => exportRecord(record, 'txt')}>{fa ? 'دانلود متن TXT' : 'Download TXT'}</button>
+                            <button onClick={() => exportRecord(record, 'json')}>{fa ? 'دانلود JSON' : 'Download JSON'}</button>
                             <button
                               disabled={!record.segments?.length}
                               onClick={() => exportRecord(record, 'srt')}
-                            >دانلود زیرنویس SRT</button>
+                            >{fa ? 'دانلود زیرنویس SRT' : 'Download SRT subtitles'}</button>
                             <button
                               disabled={!record.segments?.length}
                               onClick={() => exportRecord(record, 'vtt')}
-                            >دانلود زیرنویس VTT</button>
+                            >{fa ? 'دانلود زیرنویس VTT' : 'Download VTT subtitles'}</button>
                             <button onClick={() => {
                               setOpenMenu(null)
                               navigate(`/dashboard/files/${encodeURIComponent(String(record.id))}`)
-                            }}>نمایش متن</button>
+                            }}>{fa ? 'نمایش متن' : 'View transcription'}</button>
                           </div>
                         )}
                       </td>
@@ -486,32 +501,32 @@ useEffect(() => {
             <button
               type="button"
               className="dashboard-modal-close"
-              aria-label="بستن پنجره"
+              aria-label={fa ? "بستن پنجره" : "Close dialog"}
               onClick={() => setBulkExportOpen(false)}
             >×</button>
-            <span className="dashboard-eyebrow">خروجی گروهی</span>
-            <h2 id="dashboard-bulk-export-title">خروجی فایل‌های انتخاب‌شده</h2>
-            <p>{selectedIds.size} رکورد در یک فایل خروجی قرار می‌گیرند.</p>
+            <span className="dashboard-eyebrow">{fa ? "خروجی گروهی" : "BULK EXPORT"}</span>
+            <h2 id="dashboard-bulk-export-title">{fa ? 'خروجی فایل‌های انتخاب‌شده' : 'Export selected files'}</h2>
+            <p>{fa ? `${selectedIds.size} رکورد در یک فایل خروجی قرار می‌گیرند.` : `${selectedIds.size} selected files will be included in one export.`}</p>
             <div className="dashboard-modal-formats">
-              <button type="button" onClick={() => exportSelected('txt')}>TXT <span>متن ساده</span></button>
-              <button type="button" onClick={() => exportSelected('json')}>JSON <span>اطلاعات ساختاریافته</span></button>
+              <button type="button" onClick={() => exportSelected('txt')}>TXT <span>{fa ? 'متن ساده' : 'Plain text'}</span></button>
+              <button type="button" onClick={() => exportSelected('json')}>JSON <span>{fa ? 'اطلاعات ساختاریافته' : 'Structured data'}</span></button>
               <button
                 type="button"
                 disabled={history.filter((record) => selectedIds.has(record.id)).some((record) => !record.segments?.length)}
                 onClick={() => exportSelected('srt')}
-              >SRT <span>زیرنویس</span></button>
+              >SRT <span>{fa ? 'زیرنویس' : 'Subtitles'}</span></button>
               <button
                 type="button"
                 disabled={history.filter((record) => selectedIds.has(record.id)).some((record) => !record.segments?.length)}
                 onClick={() => exportSelected('vtt')}
-              >VTT <span>زیرنویس وب</span></button>
+              >VTT <span>{fa ? 'زیرنویس وب' : 'Web subtitles'}</span></button>
             </div>
           </section>
         </div>
       )}
 
       <footer className="dashboard-footer">
-        NEGAR <span>·</span> فضای کار شخصی شما
+        NEGAR <span>·</span> {fa ? 'فضای کار شخصی شما' : 'Your personal workspace'}
       </footer>
     </main>
   )
