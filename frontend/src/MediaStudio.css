@@ -1,14 +1,14 @@
 .media-studio {
-  --ms-bg: #f5f5ef;
-  --ms-ink: #202820;
-  --ms-muted: #777e74;
-  --ms-line: #dedfd5;
-  --ms-accent: #c9f36b;
+  --ms-bg: #f6f7f9;
+  --ms-ink: #202532;
+  --ms-muted: #737b8b;
+  --ms-line: #e2e5eb;
+  --ms-accent: #6158d9;
 
   min-height: 100vh;
   background: var(--ms-bg);
   color: var(--ms-ink);
-  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: "Vazirmatn", sans-serif;
 }
 
 .media-studio * {

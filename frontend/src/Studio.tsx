@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { useAudioPlayer } from './AudioPlayer'
 import './Studio.css'
+import StudioHeader from './StudioHeader'
 import { useNavigate } from 'react-router-dom'
 
 type Language = 'fa' | 'en'
@@ -12,6 +13,9 @@ function Studio() {
   const [file, setFile] = useState<File | null>(null)
   const [dragging, setDragging] = useState(false)
   const [lang, setLang] = useState<Language>('fa')
+  const [darkMode, setDarkMode] = useState(
+    () => (localStorage.getItem('negar-theme') ?? 'dark') === 'dark'
+  )
   const fa = lang === 'fa'
   const [processing, setProcessing] = useState(false)
   const [error, setError] = useState('')
@@ -95,33 +99,17 @@ function Studio() {
 
   return (
     <main className={`negar-page ${fa ? 'negar-fa' : 'negar-en'}`} dir={fa ? 'rtl' : 'ltr'}>
-      <header className="negar-header">
-        <a className="negar-brand" href="/" aria-label="Shayan Hub">
-          <span className="negar-brand-mark">S<span>.</span></span>
-          <span>SHAYAN<span className="negar-muted">HUB</span></span>
-        </a>
-
-        <nav className="negar-nav">
-          <a href="/">{fa ? 'صفحه اصلی' : 'Home'}</a>
-          <span className="negar-nav-divider">/</span>
-          <a href="/studio">{fa ? 'استودیو رسانه' : 'Media Studio'}</a>
-        </nav>
-
-        <div className="negar-header-actions">
-          <button className="negar-language" type="button" onClick={() => setLang(fa ? 'en' : 'fa')}>
-            {fa ? 'English' : 'فارسی'}
-          </button>
-          <a
-            className="negar-account"
-            href={localStorage.getItem('access_token') ? '/dashboard' : '/login'}
-          >
-            {localStorage.getItem('access_token')
-              ? (fa ? 'داشبورد' : 'Dashboard')
-              : (fa ? 'ورود' : 'Sign in')}
-            <span>↗</span>
-          </a>
-        </div>
-      </header>
+      <StudioHeader
+        title={fa ? 'گفتار به متن' : 'Speech to text'}
+        lang={lang}
+        onToggleLanguage={() => setLang(fa ? 'en' : 'fa')}
+        darkMode={darkMode}
+        onToggleTheme={() => {
+          const nextTheme = darkMode ? 'light' : 'dark'
+          localStorage.setItem('negar-theme', nextTheme)
+          setDarkMode(nextTheme === 'dark')
+        }}
+      />
 
       <section className="negar-main">
         <div className="negar-intro">

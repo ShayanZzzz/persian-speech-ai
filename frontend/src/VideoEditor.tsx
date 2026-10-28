@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import './VideoEditor.css'
+import StudioHeader from './StudioHeader'
 
 type Subtitle = {
   id: string
@@ -52,6 +53,11 @@ export default function VideoEditor() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const state = location.state as EditorLocationState | null
+  const [lang, setLang] = useState<'fa' | 'en'>('fa')
+  const fa = lang === 'fa'
+  const [darkMode, setDarkMode] = useState(
+    () => (localStorage.getItem('negar-theme') ?? 'dark') === 'dark'
+  )
 
   const [file, setFile] = useState<File | null>(state?.file ?? null)
   const [videoUrl, setVideoUrl] = useState('')
@@ -99,7 +105,7 @@ export default function VideoEditor() {
   function chooseFile(next?: File) {
     if (!next) return
     if (!next.type.startsWith('video/')) {
-      setMessage('لطفاً یک فایل ویدیویی انتخاب کنید.')
+      setMessage(fa ? 'لطفاً یک فایل ویدیویی انتخاب کنید.' : 'Please select a video file.')
       return
     }
     setFile(next)
@@ -207,7 +213,7 @@ export default function VideoEditor() {
       try {
         await video.play()
       } catch {
-        setMessage('پخش ویدیو آغاز نشد؛ فرمت فایل را بررسی کنید.')
+        setMessage(fa ? 'پخش ویدیو آغاز نشد؛ فرمت فایل را بررسی کنید.' : 'Video playback failed. Check the file format.')
       }
     } else {
       video.pause()
@@ -231,7 +237,7 @@ export default function VideoEditor() {
       content,
       format === 'srt' ? 'application/x-subrip;charset=utf-8' : 'text/vtt;charset=utf-8',
     )
-    setMessage(`خروجی ${format.toUpperCase()} آماده شد.`)
+    setMessage(fa ? `خروجی ${format.toUpperCase()} آماده شد.` : `${format.toUpperCase()} export is ready.`)
   }
 
   function exportProject() {
@@ -249,16 +255,16 @@ export default function VideoEditor() {
 
   async function exportVideo() {
     if (!file) {
-      setMessage('ابتدا یک فایل ویدیویی انتخاب کنید.')
+      setMessage(fa ? 'ابتدا یک فایل ویدیویی انتخاب کنید.' : 'Please select a video file first.')
       return
     }
     if (!subtitles.some((item) => item.text.trim() && item.end > item.start && item.start >= 0)) {
-      setMessage('ابتدا دست‌کم یک زیرنویس معتبر اضافه کنید.')
+      setMessage(fa ? 'ابتدا دست‌کم یک زیرنویس معتبر اضافه کنید.' : 'Add at least one valid subtitle first.')
       return
     }
 
     setExportingVideo(true)
-    setMessage('در حال ساخت ویدیوی نهایی؛ بسته به طول ویدیو ممکن است زمان ببرد...')
+    setMessage(fa ? 'در حال ساخت ویدیوی نهایی؛ بسته به طول ویدیو ممکن است زمان ببرد...' : 'Rendering the final video. This may take a while.')
 
     try {
       const video = videoRef.current
@@ -290,7 +296,7 @@ export default function VideoEditor() {
       })
 
       if (!response.ok) {
-        let detail = 'ساخت ویدیو ناموفق بود.'
+        let detail = fa ? 'ساخت ویدیو ناموفق بود.' : 'Video export failed.'
         try {
           const payload = await response.json()
           if (typeof payload.detail === 'string') detail = payload.detail
@@ -309,50 +315,72 @@ export default function VideoEditor() {
       anchor.click()
       anchor.remove()
       window.setTimeout(() => URL.revokeObjectURL(url), 1000)
-      setMessage('ویدیوی نهایی آماده و دانلود شد.')
+      setMessage(fa ? 'ویدیوی نهایی آماده و دانلود شد.' : 'The final video is ready and downloaded.')
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'خطا در ساخت ویدیوی نهایی.')
+      setMessage(error instanceof Error ? error.message : (fa ? 'خطا در ساخت ویدیوی نهایی.' : 'An unexpected error occurred while exporting the video.'))
     } finally {
       setExportingVideo(false)
     }
   }
 
   return (
-    <main className="video-editor" dir="rtl">
-      <header className="ve-header">
-        <Link to="/studio" className="ve-brand">S. SHAYAN HUB</Link>
-        <div>
-          <span className="ve-eyebrow">MEDIA STUDIO</span>
-          <h1>استودیو تدوین زیرنویس</h1>
-        </div>
-        <button className="ve-secondary-button" onClick={() => navigate('/studio/negar')}>
-          بازگشت
+    <main
+      className={`video-editor ${darkMode ? 've-dark' : 've-light'} ${fa ? 've-fa' : 've-en'}`}
+      dir={fa ? 'rtl' : 'ltr'}
+    >
+      <StudioHeader
+        title={fa ? 'استودیو تدوین زیرنویس' : 'Subtitle Editing Studio'}
+        lang={lang}
+        onToggleLanguage={() => setLang(fa ? 'en' : 'fa')}
+        darkMode={darkMode}
+        onToggleTheme={() => {
+          const nextTheme = darkMode ? 'light' : 'dark'
+          localStorage.setItem('negar-theme', nextTheme)
+          setDarkMode(nextTheme === 'dark')
+        }}
+      />
+      <div className="ve-editor-meta">
+        {file && (
+          <div className="ve-file-info ve-file-info-header" title={file.name}>
+            <strong>{file.name}</strong>
+            <span>{(file.size / 1048576).toFixed(1)} مگابایت</span>
+          </div>
+        )}
+
+      </div>
+
+      <div className="ve-workspace">
+        <button
+          className="ve-secondary-button ve-back-aligned"
+          onClick={() => navigate('/studio')}
+        >
+          {fa ? 'بازگشت' : 'Back'}
         </button>
-        <div className="ve-file-info ve-file-info-header" title={file?.name ?? ''}>
-          <strong>{file?.name ?? 'هنوز ویدیویی انتخاب نشده است'}</strong>
-          <span>{file ? `${(file.size / 1048576).toFixed(1)} مگابایت` : 'فایل به‌صورت محلی پخش می‌شود.'}</span>
-        </div>
-      </header>
+        <section className="ve-preview-column">
 
           <div className="ve-section-heading ve-preview-toolbar">
             <div>
-              <span className="ve-eyebrow">PREVIEW</span>
-              <h2>پیش‌نمایش ویدیو</h2>
+                            <h2>{fa ? 'پیش‌نمایش ویدیو' : 'Video Preview'}</h2>
             </div>
-            <button className="ve-secondary-button" onClick={() => inputRef.current?.click()}>
-              انتخاب ویدیو
-            </button>
-            <input
-              ref={inputRef}
-              hidden
-              type="file"
-              accept="video/*"
-              onChange={(event) => chooseFile(event.target.files?.[0])}
-            />
+
+            <div className="ve-preview-actions">
+              <button
+                className="ve-secondary-button"
+                onClick={() => inputRef.current?.click()}
+              >
+                {fa ? 'انتخاب ویدیو' : 'Select Video'}
+              </button>
+
+              <input
+                ref={inputRef}
+                hidden
+                type="file"
+                accept="video/*"
+                onChange={(event) => chooseFile(event.target.files?.[0])}
+              />
+            </div>
           </div>
 
-      <div className="ve-workspace">
-        <section className="ve-preview-column">
 
 
           <div className="ve-player">
@@ -383,11 +411,11 @@ export default function VideoEditor() {
                 )}
                 <div className="ve-player-controls">
                   <button onClick={() => void togglePlayback()}>
-                    {playing ? 'توقف موقت' : 'پخش'}
+                    {playing ? (fa ? 'توقف موقت' : 'Pause') : (fa ? 'پخش' : 'Play')}
                   </button>
                   <span>{formatTime(currentTime)} / {formatTime(duration)}</span>
                   <select
-                    aria-label="سرعت پخش"
+                    aria-label={fa ? 'سرعت پخش' : 'Playback speed'}
                     value={speed}
                     onChange={(event) => setSpeed(Number(event.target.value))}
                   >
@@ -406,7 +434,7 @@ export default function VideoEditor() {
             ) : (
               <button className="ve-empty-player" onClick={() => inputRef.current?.click()}>
                 <span className="ve-play-symbol">▶</span>
-                <strong>ویدیوی خود را انتخاب کنید</strong>
+                <strong>{fa ? 'ویدیوی خود را انتخاب کنید' : 'Choose a video'}</strong>
                 <span>MP4 · MOV · WebM</span>
               </button>
             )}
@@ -419,8 +447,7 @@ export default function VideoEditor() {
           <section className="ve-panel">
             <div className="ve-section-heading">
               <div>
-                <span className="ve-eyebrow">TIMELINE</span>
-                <h2>تایم‌لاین زیرنویس</h2>
+                                <h2>{fa ? 'تایم‌لاین زیرنویس' : 'Subtitle Timeline'}</h2>
               </div>
               <button className="ve-primary-button" onClick={addSubtitle}>
                 + افزودن قطعه
@@ -429,7 +456,7 @@ export default function VideoEditor() {
 
             <input
               className="ve-seek"
-              aria-label="موقعیت ویدیو"
+              aria-label={fa ? 'موقعیت ویدیو' : 'Video position'}
               type="range"
               min="0"
               max={Math.max(duration, 0.1)}
@@ -440,15 +467,15 @@ export default function VideoEditor() {
 
             {selected && (
               <div className="ve-selected-timing" dir="ltr">
-                <span>Start <strong>{formatTime(selected.start)}</strong></span>
-                <span>End <strong>{formatTime(selected.end)}</strong></span>
-                <span>Duration <strong>{formatTime(selected.end - selected.start)}</strong></span>
+                <span>{fa ? "شروع" : "Start"} <strong>{formatTime(selected.start)}</strong></span>
+                <span>{fa ? "پایان" : "End"} <strong>{formatTime(selected.end)}</strong></span>
+                <span>{fa ? "مدت" : "Duration"} <strong>{formatTime(selected.end - selected.start)}</strong></span>
               </div>
             )}
 
             <div
               className="ve-timeline"
-              aria-label="تایم‌لاین زیرنویس"
+              aria-label={fa ? 'تایم‌لاین زیرنویس' : 'Subtitle timeline'}
               onClick={(event) => {
                 if (!duration) return
                 const rect = event.currentTarget.getBoundingClientRect()
@@ -483,7 +510,7 @@ export default function VideoEditor() {
 
               {subtitles.length === 0 && (
                 <p className="ve-empty-note ve-timeline-empty">
-                  برای شروع، یک قطعهٔ زیرنویس اضافه کنید.
+                  {fa ? 'برای شروع، یک قطعهٔ زیرنویس اضافه کنید.' : 'Add a subtitle to get started.'}
                 </p>
               )}
 
@@ -508,19 +535,19 @@ export default function VideoEditor() {
                       event.stopPropagation()
                       setSelectedId(item.id)
                     }}
-                    title={`${formatTime(item.start)} – ${formatTime(item.end)} | ${item.text || 'قطعهٔ بدون متن'}`}
+                    title={`${formatTime(item.start)} – ${formatTime(item.end)} | ${item.text || (fa ? 'قطعهٔ بدون متن' : 'Untitled subtitle')}`}
                   >
                     <span
                       className="ve-resize-handle"
-                      aria-label="تغییر زمان شروع"
+                      aria-label={fa ? 'تغییر زمان شروع' : 'Adjust start time'}
                       onPointerDown={(event) => dragSubtitle(event, item, 'start')}
                     />
                     <span className="ve-clip-label">
-                      {item.text || 'بدون متن'}
+                      {item.text || (fa ? 'بدون متن' : 'No text')}
                     </span>
                     <span
                       className="ve-resize-handle"
-                      aria-label="تغییر زمان پایان"
+                      aria-label={fa ? 'تغییر زمان پایان' : 'Adjust end time'}
                       onPointerDown={(event) => dragSubtitle(event, item, 'end')}
                     />
                   </button>
@@ -540,12 +567,11 @@ export default function VideoEditor() {
 
         <aside className="ve-sidebar">
           <section className="ve-panel">
-            <span className="ve-eyebrow">SUBTITLE EDITOR</span>
-            <h2>ویرایش زیرنویس</h2>
+                        <h2>{fa ? 'ویرایش زیرنویس' : 'Edit Subtitle'}</h2>
             {selected ? (
               <>
                 <label className="ve-field">
-                  متن زیرنویس
+                  {fa ? 'متن زیرنویس' : 'Subtitle text'}
                   <textarea
                     rows={4}
                     value={selected.text}
@@ -553,7 +579,7 @@ export default function VideoEditor() {
                   />
                 </label>
                 <label className="ve-field">
-                  زمان شروع (ساعت:دقیقه:ثانیه،میلی‌ثانیه)
+                  {fa ? 'زمان شروع (ساعت:دقیقه:ثانیه،میلی‌ثانیه)' : 'Start time (HH:MM:SS,mmm)'}
                   <input
                     dir="ltr"
                     value={formatTime(selected.start)}
@@ -561,7 +587,7 @@ export default function VideoEditor() {
                   />
                 </label>
                 <label className="ve-field">
-                  زمان پایان
+                  {fa ? 'زمان پایان' : 'End time'}
                   <input
                     dir="ltr"
                     value={formatTime(selected.end)}
@@ -579,52 +605,50 @@ export default function VideoEditor() {
                 </button>
               </>
             ) : (
-              <p className="ve-empty-note">یک قطعه را از تایم‌لاین انتخاب کنید یا قطعهٔ جدید بسازید.</p>
+              <p className="ve-empty-note">{fa ? 'یک قطعه را از تایم‌لاین انتخاب کنید یا قطعهٔ جدید بسازید.' : 'Select a timeline item or create a new subtitle.'}</p>
             )}
           </section>
 
           <section className="ve-panel">
-            <span className="ve-eyebrow">STYLE</span>
-            <h2>ظاهر زیرنویس</h2>
+                        <h2>{fa ? 'ظاهر زیرنویس' : 'Subtitle Appearance'}</h2>
             <label className="ve-field">
-              قلم
+              {fa ? 'قلم' : 'Font'}
               <select value={fontFamily} onChange={(event) => setFontFamily(event.target.value)}>
-                <option value="Vazirmatn">وزیرمتن</option>
+                <option value="Vazirmatn">{fa ? 'وزیرمتن' : 'Vazirmatn'}</option>
                 <option value="Arial">Arial</option>
                 <option value="Tahoma">Tahoma</option>
                 <option value="sans-serif">Sans-serif</option>
               </select>
             </label>
             <label className="ve-field">
-              اندازهٔ قلم: {fontSize}px
+              {fa ? 'اندازهٔ قلم' : 'Font size'}: {fontSize}px
               <input type="range" min="14" max="56" value={fontSize} onChange={(event) => setFontSize(Number(event.target.value))} />
             </label>
             <div className="ve-color-row">
-              <label>رنگ متن <input type="color" value={fontColor} onChange={(event) => setFontColor(event.target.value)} /></label>
-              <label>پس‌زمینه <input type="color" value={backgroundColor} onChange={(event) => setBackgroundColor(event.target.value)} /></label>
+              <label>{fa ? 'رنگ متن' : 'Text color'} <input type="color" value={fontColor} onChange={(event) => setFontColor(event.target.value)} /></label>
+              <label>{fa ? 'پس‌زمینه' : 'Background'} <input type="color" value={backgroundColor} onChange={(event) => setBackgroundColor(event.target.value)} /></label>
             </div>
             <label className="ve-field">
-              جایگاه زیرنویس
+              {fa ? 'جایگاه زیرنویس' : 'Subtitle position'}
               <select value={position} onChange={(event) => setPosition(event.target.value)}>
-                <option value="bottom">پایین</option>
-                <option value="middle">وسط</option>
-                <option value="top">بالا</option>
+                <option value="bottom">{fa ? 'پایین' : 'Bottom'}</option>
+                <option value="middle">{fa ? 'وسط' : 'Middle'}</option>
+                <option value="top">{fa ? 'بالا' : 'Top'}</option>
               </select>
             </label>
           </section>
 
           <section className="ve-panel">
-            <span className="ve-eyebrow">EXPORT</span>
-            <h2>خروجی</h2>
+                        <h2>{fa ? 'خروجی' : 'Export'}</h2>
             <p className="ve-export-note">
-              زیرنویس‌ها را دائماً روی تصویر رندر و ویدیوی MP4 نهایی را دانلود کنید.
+              {fa ? 'زیرنویس‌ها را دائماً روی تصویر رندر و ویدیوی MP4 نهایی را دانلود کنید.' : 'Burn subtitles into the video and download the final MP4.'}
             </p>
             <button
               className="ve-primary-button ve-full-button"
               onClick={exportVideo}
               disabled={!file || exportingVideo}
             >
-              {exportingVideo ? 'در حال ساخت ویدیو...' : 'دانلود MP4 با زیرنویس'}
+              {exportingVideo ? (fa ? 'در حال ساخت ویدیو...' : 'Rendering video...') : (fa ? 'دانلود MP4 با زیرنویس' : 'Download MP4 with Subtitles')}
             </button>
             <button className="ve-primary-button ve-full-button" onClick={() => exportSubtitles('srt')}>
               دانلود SRT

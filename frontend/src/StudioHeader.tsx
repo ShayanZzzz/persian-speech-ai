@@ -1,0 +1,111 @@
+import { useState, type ReactNode } from 'react'
+import { Link, useLocation } from 'react-router-dom'
+import './StudioHeader.css'
+
+type StudioHeaderProps = {
+  title: string
+  lang?: 'fa' | 'en'
+  onToggleLanguage?: () => void
+  darkMode?: boolean
+  onToggleTheme?: () => void
+  collapsible?: boolean
+  children?: ReactNode
+}
+
+export default function StudioHeader({
+  title,
+  lang = 'fa',
+  onToggleLanguage,
+  darkMode,
+  onToggleTheme,
+  collapsible = false,
+  children,
+}: StudioHeaderProps) {
+  const [menuOpen, setMenuOpen] = useState(false)
+  const location = useLocation()
+  const fa = lang === 'fa'
+  const accountHref = localStorage.getItem('access_token')
+    ? '/dashboard'
+    : '/login'
+
+  const links = [
+    { to: '/studio', label: fa ? 'خانهٔ استودیو' : 'Studio home' },
+    { to: '/studio/stt', label: fa ? 'گفتار به متن' : 'Speech to text' },
+    { to: '/studio/video', label: fa ? 'تدوین و زیرنویس ویدیو' : 'Video & subtitles' },
+    { to: accountHref, label: fa ? 'حساب کاربری' : 'Account' },
+  ]
+
+  return (
+    <header className={`studio-header ${fa ? 'studio-header-fa' : 'studio-header-en'} ${darkMode ? 'studio-header-dark' : 'studio-header-light'} ${collapsible ? 'studio-header-collapsible' : ''}`} dir={fa ? 'rtl' : 'ltr'}>
+
+        <div className="studio-header-menu-wrap">
+          <button
+            className="studio-header-menu-button"
+            type="button"
+            aria-expanded={menuOpen}
+            aria-haspopup="true"
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            <span className="studio-header-menu-icon" aria-hidden="true">☰</span>
+            <span>{fa ? 'سرویس‌ها' : 'Services'}</span>
+          </button>
+
+          {menuOpen && (
+            <>
+              <button
+                className="studio-header-dismiss"
+                type="button"
+                aria-label={fa ? 'بستن منو' : 'Close menu'}
+                onClick={() => setMenuOpen(false)}
+              />
+              <nav className="studio-header-dropdown" aria-label={fa ? 'ناوبری استودیو' : 'Studio navigation'}>
+                {links.map((item) => (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    onClick={() => setMenuOpen(false)}
+                    className={location.pathname === item.to ? 'is-active' : ''}
+                  >
+                    {item.label}
+                    {location.pathname === item.to && <span aria-hidden="true">●</span>}
+                  </Link>
+                ))}
+              </nav>
+            </>
+          )}
+        </div>
+
+      <div className="studio-header-current">
+        <span>{fa ? 'استودیوی هوش مصنوعی رسانه' : 'MEDIA AI STUDIO'}</span>
+        <strong>{title}</strong>
+      </div>
+
+      <div className="studio-header-actions">
+        {onToggleLanguage && (
+          <button className="studio-header-control" type="button" onClick={onToggleLanguage}>
+            {fa ? 'English' : 'فارسی'}
+          </button>
+        )}
+
+        {onToggleTheme && (
+          <button
+            className="studio-header-control"
+            type="button"
+            onClick={onToggleTheme}
+            aria-label={darkMode ? (fa ? 'فعال‌کردن حالت روشن' : 'Switch to light mode') : (fa ? 'فعال‌کردن حالت شب' : 'Switch to dark mode')}
+          >
+            {darkMode ? '☀' : '☾'}
+            <span>{darkMode ? (fa ? 'روشن' : 'Light') : (fa ? 'تیره' : 'Dark')}</span>
+          </button>
+        )}
+
+      <Link className="studio-header-brand" to="/" aria-label="Shayan Hub">
+        <span className="studio-header-mark">S<span>.</span></span>
+        <span>SHAYAN<span className="studio-header-muted">HUB</span></span>
+      </Link>
+      </div>
+
+      {children && <div className="studio-header-extra">{children}</div>}
+    </header>
+  )
+}

@@ -1,10 +1,10 @@
 .video-editor {
-  --ve-bg: #10120f;
-  --ve-panel: #181b17;
-  --ve-border: rgba(235, 239, 225, 0.1);
-  --ve-text: #e9ece3;
-  --ve-muted: #92988d;
-  --ve-accent: #c7f36b;
+  --ve-bg: #15171d;
+  --ve-panel: #1e212a;
+  --ve-border: rgba(226, 229, 235, 0.14);
+  --ve-text: #f0f1f6;
+  --ve-muted: #a0a6b5;
+  --ve-accent: #a9a2ff;
   min-height: 100vh;
   padding: 0 32px 48px;
   background: var(--ve-bg);
@@ -67,7 +67,7 @@
   height: 38px;
   border-radius: 12px;
   background: var(--ve-accent);
-  color: #171b10;
+  color: #ffffff;
   font-size: 21px;
   letter-spacing: 0;
 }
@@ -111,6 +111,7 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
+  margin-top: 66px;
 }
 
 .ve-section-heading {
@@ -125,6 +126,7 @@
 .ve-section-heading h2,
 .ve-panel h2 {
   margin: 5px 0 0;
+  color: var(--ve-accent);
   font-size: 17px;
   font-weight: 650;
 }
@@ -158,7 +160,7 @@
   min-height: 300px;
   border: 0;
   background:
-    radial-gradient(ellipse at 50% 45%, rgba(199, 243, 107, 0.07), transparent 55%),
+    radial-gradient(ellipse at 50% 45%, rgba(169, 162, 255, 0.09), transparent 55%),
     #0a0b09;
   color: var(--ve-text);
 }
@@ -178,7 +180,7 @@
   width: 64px;
   height: 64px;
   padding-right: 3px;
-  border: 1px solid rgba(199, 243, 107, 0.5);
+  border: 1px solid rgba(169, 162, 255, 0.5);
   border-radius: 50%;
   color: var(--ve-accent);
   font-size: 21px;
@@ -286,7 +288,7 @@
   flex-direction: column;
   gap: 9px;
   margin-top: 19px;
-  color: #d5d9ce;
+  color: #c5c9d5;
   font-size: 12px;
 }
 
@@ -295,10 +297,10 @@
 .ve-field select {
   width: 100%;
   min-width: 0;
-  border: 1px solid rgba(235, 239, 225, 0.12);
+  border: 1px solid rgba(226, 229, 235, 0.12);
   border-radius: 9px;
   padding: 11px 12px;
-  background: #11130f;
+  background: #1e212a;
   color: var(--ve-text);
   outline: none;
 }
@@ -339,23 +341,23 @@
 }
 
 .ve-secondary-button {
-  background: #20231e;
+  background: #272b36;
   color: var(--ve-text);
 }
 
 .ve-secondary-button:hover {
-  border-color: rgba(199, 243, 107, 0.45);
-  background: #272b23;
+  border-color: rgba(169, 162, 255, 0.45);
+  background: #302d4d;
 }
 
 .ve-primary-button {
   border-color: var(--ve-accent);
   background: var(--ve-accent);
-  color: #15180f;
+  color: #ffffff;
 }
 
 .ve-primary-button:hover {
-  background: #d5ff8c;
+  background: #beb9ff;
 }
 
 .ve-danger-button {
@@ -392,7 +394,7 @@
   justify-content: space-between;
   align-items: center;
   gap: 8px;
-  color: #d5d9ce;
+  color: #c5c9d5;
   font-size: 11px;
 }
 
@@ -402,7 +404,7 @@
   padding: 3px;
   border: 1px solid var(--ve-border);
   border-radius: 7px;
-  background: #11130f;
+  background: #1e212a;
   cursor: pointer;
 }
 
@@ -423,7 +425,7 @@
 }
 
 .ve-selected-timing strong {
-  color: var(--ve-text, #efffd3);
+  color: var(--ve-text, #f0f1f6);
   font-variant-numeric: tabular-nums;
 }
 
@@ -435,7 +437,7 @@
   overflow: hidden;
   border: 1px solid var(--ve-border);
   border-radius: 8px;
-  background: #11130f;
+  background: #1e212a;
   direction: ltr;
   touch-action: pan-y;
   cursor: crosshair;
@@ -461,7 +463,7 @@
   position: absolute;
   top: 5px;
   left: 0;
-  color: #a6ad9c;
+  color: #a0a6b5;
   font-size: 10px;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
@@ -477,11 +479,11 @@
   min-width: 18px;
   height: 38px;
   overflow: hidden;
-  border: 1px solid rgba(199, 243, 107, 0.35);
+  border: 1px solid rgba(169, 162, 255, 0.35);
   border-radius: 6px;
   padding: 0;
-  background: rgba(199, 243, 107, 0.14);
-  color: #dce9c6;
+  background: rgba(169, 162, 255, 0.14);
+  color: #e0ddff;
   text-align: right;
   font-size: 11px;
   direction: ltr;
@@ -539,8 +541,8 @@
 
 .ve-timeline-clip.is-selected {
   border-color: var(--ve-accent);
-  background: rgba(199, 243, 107, 0.18);
-  color: #efffd3;
+  background: rgba(169, 162, 255, 0.18);
+  color: #f0f1f6;
 }
 
 .ve-timeline-clip:hover {
@@ -589,6 +591,10 @@
 }
 
 @media (max-width: 760px) {
+  .ve-sidebar {
+    margin-top: 0;
+  }
+
   .ve-player {
     max-height: none;
   }
@@ -699,5 +705,290 @@
   .ve-file-info-header strong {
     white-space: normal;
     overflow-wrap: anywhere;
+  }
+}
+
+
+/* File information and navigation row below the shared studio header. */
+.video-editor .ve-editor-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  margin: 16px 0 22px;
+}
+
+.video-editor .ve-editor-meta .ve-file-info-header {
+  flex: 1;
+  min-width: 0;
+  grid-column: auto;
+  margin: 0;
+}
+
+.video-editor .ve-editor-meta > button {
+  flex-shrink: 0;
+}
+
+@media (max-width: 760px) {
+  .video-editor .ve-editor-meta {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .video-editor .ve-editor-meta > button {
+    align-self: flex-start;
+  }
+}
+
+/* Preview toolbar actions */
+.video-editor .ve-preview-toolbar {
+  position: relative;
+  min-height: 44px;
+}
+
+.video-editor .ve-preview-actions {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-start: 0;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  direction: ltr;
+}
+
+.video-editor .ve-preview-actions button {
+  position: static;
+  flex: 0 0 auto;
+  transform: none;
+  margin: 0;
+  direction: rtl;
+}
+
+/* Keep Select Video in place; move Back to the far left. */
+
+
+@media (max-width: 760px) {
+  .video-editor .ve-preview-toolbar {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .video-editor .ve-preview-actions {
+    position: static;
+    transform: none;
+    align-self: flex-start;
+    flex-wrap: wrap;
+  }
+
+}
+
+
+/* Align Back with the left edge of the workspace/sidebar. */
+.video-editor .ve-workspace {
+  position: relative;
+}
+
+.video-editor .ve-back-aligned {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 2;
+  margin: 0;
+  transform: none;
+}
+
+@media (max-width: 760px) {
+  .video-editor .ve-back-aligned {
+    position: static;
+    justify-self: start;
+  }
+}
+
+
+/* Video editor theme variants */
+.video-editor.ve-light {
+  --ve-bg: #f3f4f8;
+  --ve-panel: #ffffff;
+  --ve-border: rgba(37, 43, 60, 0.16);
+  --ve-text: #202532;
+  --ve-muted: #737b8b;
+  --ve-accent: #6158d9;
+}
+
+.video-editor.ve-light .ve-field {
+  color: #42495a;
+}
+
+.video-editor.ve-light .ve-field input:not([type='range']),
+.video-editor.ve-light .ve-field textarea,
+.video-editor.ve-light .ve-field select,
+.video-editor.ve-light .ve-color-row input[type='color'] {
+  border-color: rgba(37, 43, 60, 0.16);
+  background: #f8f9fc;
+  color: var(--ve-text);
+}
+
+.video-editor.ve-light .ve-secondary-button {
+  background: #ffffff;
+  color: var(--ve-text);
+}
+
+.video-editor.ve-light .ve-secondary-button:hover {
+  background: #eeedff;
+}
+
+.video-editor.ve-light .ve-timeline {
+  background: #f7f7fc;
+}
+
+.video-editor.ve-light .ve-time-ruler {
+  border-bottom-color: rgba(37, 43, 60, 0.15);
+}
+
+.video-editor.ve-light .ve-time-tick {
+  border-left-color: rgba(37, 43, 60, 0.15);
+}
+
+.video-editor.ve-light .ve-time-label {
+  color: #737b8b;
+}
+
+.video-editor.ve-light .ve-timeline-clip.is-selected {
+  color: #292447;
+}
+
+.video-editor.ve-light .ve-playhead {
+  background: #6158d9;
+  box-shadow: 0 0 5px rgba(97, 88, 217, 0.35);
+}
+
+.video-editor.ve-en {
+  font-family: Arial, sans-serif;
+}
+
+.video-editor.ve-en .ve-clip-label {
+  direction: ltr;
+  text-align: left;
+}
+
+.video-editor.ve-en .ve-preview-toolbar,
+.video-editor.ve-en .ve-section-heading {
+  direction: ltr;
+}
+
+.video-editor.ve-en .ve-color-row label {
+  direction: ltr;
+}
+
+.video-editor.ve-en .ve-back-aligned {
+  left: auto;
+  right: 0;
+}
+
+.video-editor.ve-en .ve-field input,
+.video-editor.ve-en .ve-field textarea {
+  direction: ltr;
+  text-align: left;
+}
+
+
+/* Video editor theme variants */
+.video-editor.ve-light {
+  --ve-bg: #f3f4f8;
+  --ve-panel: #ffffff;
+  --ve-border: rgba(37, 43, 60, 0.16);
+  --ve-text: #202532;
+  --ve-muted: #737b8b;
+  --ve-accent: #6158d9;
+}
+
+.video-editor.ve-light .ve-field {
+  color: #42495a;
+}
+
+.video-editor.ve-light .ve-field input:not([type='range']),
+.video-editor.ve-light .ve-field textarea,
+.video-editor.ve-light .ve-field select,
+.video-editor.ve-light .ve-color-row input[type='color'] {
+  border-color: rgba(37, 43, 60, 0.16);
+  background: #f8f9fc;
+  color: var(--ve-text);
+}
+
+.video-editor.ve-light .ve-secondary-button {
+  background: #ffffff;
+  color: var(--ve-text);
+}
+
+.video-editor.ve-light .ve-secondary-button:hover {
+  background: #eeedff;
+}
+
+.video-editor.ve-light .ve-timeline {
+  background: #f7f7fc;
+}
+
+.video-editor.ve-light .ve-time-ruler {
+  border-bottom-color: rgba(37, 43, 60, 0.15);
+}
+
+.video-editor.ve-light .ve-time-tick {
+  border-left-color: rgba(37, 43, 60, 0.15);
+}
+
+.video-editor.ve-light .ve-time-label {
+  color: #737b8b;
+}
+
+.video-editor.ve-light .ve-timeline-clip.is-selected {
+  color: #292447;
+}
+
+.video-editor.ve-light .ve-playhead {
+  background: #6158d9;
+  box-shadow: 0 0 5px rgba(97, 88, 217, 0.35);
+}
+
+.video-editor.ve-en {
+  font-family: Arial, sans-serif;
+}
+
+.video-editor.ve-en .ve-clip-label {
+  direction: ltr;
+  text-align: left;
+}
+
+.video-editor.ve-en .ve-preview-toolbar,
+.video-editor.ve-en .ve-section-heading {
+  direction: ltr;
+}
+
+.video-editor.ve-en .ve-color-row label {
+  direction: ltr;
+}
+
+.video-editor.ve-en .ve-back-aligned {
+  left: auto;
+  right: 0;
+}
+
+.video-editor.ve-en .ve-field input,
+.video-editor.ve-en .ve-field textarea {
+  direction: ltr;
+  text-align: left;
+}
+
+/* Keep English preview actions on the opposite side from the Back button. */
+.video-editor.ve-en .ve-preview-actions {
+  inset-inline-start: auto;
+  inset-inline-end: 0;
+}
+
+@media (max-width: 760px) {
+  .video-editor.ve-en .ve-preview-actions {
+    align-self: flex-end;
   }
 }

@@ -19,7 +19,8 @@ createRoot(document.getElementById('root')!).render(
         <Routes>
           <Route path="/" element={<App />} />
           <Route path="/studio" element={<MediaStudio />} />
-          <Route path="/studio/negar" element={<Studio />} />
+          <Route path="/studio/stt" element={<Studio />} />
+          <Route path="/studio/negar" element={<Navigate to="/studio/stt" replace />} />
           <Route path="/studio/video" element={<VideoEditor />} />
           <Route path="/login" element={<Login />} />
           <Route path="/dashboard/files/:id" element={<FileDetail />} />
