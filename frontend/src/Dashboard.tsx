@@ -3,15 +3,6 @@ import { Link, useNavigate } from 'react-router-dom'
 import './Dashboard.css'
 import StudioHeader from './StudioHeader'
 
-type User = {
-  id: number | string
-  email: string
-  created_at?: string
-  duration_seconds?: number | null
-  mode?: string | null
-  segments?: { start: number; end: number; text: string }[]
-}
-
 type HistoryRecord = {
   id: number | string
   filename: string
@@ -25,8 +16,7 @@ type HistoryRecord = {
 
 function Dashboard() {
   const navigate = useNavigate()
-  const [user, setUser] = useState<User | null>(null)
-  const [history, setHistory] = useState<HistoryRecord[]>([])
+    const [history, setHistory] = useState<HistoryRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [openMenu, setOpenMenu] = useState<string | number | null>(null)
@@ -94,10 +84,7 @@ useEffect(() => {
           throw new Error('history_load_failed')
         }
 
-        const userData = await userResponse.json()
         const historyData = await historyResponse.json()
-
-        setUser(userData)
         setHistory(Array.isArray(historyData) ? historyData : [])
       } catch (err) {
         setError(err instanceof Error ? err.message : 'server_connection_failed')
@@ -109,12 +96,7 @@ useEffect(() => {
     void loadDashboard()
   }, [navigate])
 
-  function logout() {
-    localStorage.removeItem('access_token')
-    navigate('/login', { replace: true })
-  }
-
-  function formatDate(value?: string) {
+function formatDate(value?: string) {
     if (!value) return '—'
     const date = new Date(value)
     if (Number.isNaN(date.getTime())) return value
@@ -223,15 +205,17 @@ useEffect(() => {
       return
     }
 
-    let content = ''
+    const content = (() => {
+      if (format === 'txt') {
+        return records.map((record) =>
+          `===== ${safeFilename(record.filename)} =====\n\n${record.text || ''}`
+        ).join('\n\n\n')
+      }
 
-    if (format === 'txt') {
-      content = records.map((record) =>
-        `===== ${safeFilename(record.filename)} =====\n\n${record.text || ''}`
-      ).join('\n\n\n')
-    } else if (format === 'json') {
-      content = JSON.stringify(records, null, 2)
-    } else {
+      if (format === 'json') {
+        return JSON.stringify(records, null, 2)
+      }
+
       const timecode = (seconds: number, vtt: boolean) => {
         const ms = Math.max(0, Math.floor(seconds * 1000))
         const h = Math.floor(ms / 3600000)
@@ -252,11 +236,11 @@ useEffect(() => {
           return `${number}${start} --> ${end}\n${(segment.text || '').trim()}`
         })
       )
-      content = format === 'vtt'
+
+      return format === 'vtt'
         ? `WEBVTT\n\n${blocks.join('\n\n')}\n`
         : `${blocks.join('\n\n')}\n`
-    }
-
+    })()
     const mime = format === 'json'
       ? 'application/json;charset=utf-8'
       : 'text/plain;charset=utf-8'
@@ -285,20 +269,6 @@ useEffect(() => {
         onToggleLanguage={() => setLang(fa ? "en" : "fa")}
         darkMode={darkMode}
         onToggleTheme={toggleTheme}
-        brandContent={
-          <div className="dashboard-account">
-            <div className="dashboard-avatar">
-              {user?.email?.charAt(0).toUpperCase() || '؟'}
-            </div>
-            <div className="dashboard-account-info">
-              <strong>{user?.email || (fa ? 'حساب کاربری' : 'Account')}</strong>
-              <span>{fa ? 'حساب ثبت‌نام‌شده' : 'Registered account'}</span>
-            </div>
-            <button className="dashboard-logout" onClick={logout}>
-              {fa ? 'خروج' : 'Log out'}
-            </button>
-          </div>
-        }
       />
 
       <section className="dashboard-content">
