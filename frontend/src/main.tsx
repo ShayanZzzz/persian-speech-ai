@@ -7,6 +7,7 @@ import App from './App'
 import MediaStudio from './MediaStudio'
 import Studio from './Studio'
 import VideoEditor from './VideoEditor'
+import ProtectedRoute from './ProtectedRoute'
 import Login from './Login'
 import Dashboard from './Dashboard'
 import FileDetail from './FileDetail'
@@ -21,7 +22,14 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/studio" element={<MediaStudio />} />
           <Route path="/studio/stt" element={<Studio />} />
           <Route path="/studio/negar" element={<Navigate to="/studio/stt" replace />} />
-          <Route path="/studio/video" element={<VideoEditor />} />
+          <Route
+            path="/studio/video"
+            element={
+              <ProtectedRoute>
+                <VideoEditor />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/login" element={<Login />} />
           <Route path="/dashboard/files/:id" element={<FileDetail />} />
           <Route path="/dashboard" element={<Dashboard />} />

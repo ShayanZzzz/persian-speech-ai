@@ -1,11 +1,12 @@
 import { useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import './Login.css'
 
 type Mode = 'login' | 'register'
 
 function Login() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [mode, setMode] = useState<Mode>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -64,7 +65,9 @@ function Login() {
 
       localStorage.setItem('access_token', data.access_token)
       setSuccess(isLogin ? 'ورود موفق بود.' : 'حساب ساخته شد؛ وارد شدید.')
-      navigate('/dashboard')
+      const from = (location.state as { from?: { pathname?: string } } | null)?.from
+      const destination = from?.pathname?.startsWith('/') ? from.pathname : '/dashboard'
+      navigate(destination, { replace: true })
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'خطای غیرمنتظره‌ای رخ داد.'
