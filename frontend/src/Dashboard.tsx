@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import './Dashboard.css'
 import StudioHeader from './StudioHeader'
+import type { ModelsResponse, SpeechToTextModel } from './config/models'
 
 type HistoryRecord = {
   id: number | string
@@ -17,6 +18,7 @@ type HistoryRecord = {
 function Dashboard() {
   const navigate = useNavigate()
     const [history, setHistory] = useState<HistoryRecord[]>([])
+  const [models, setModels] = useState<SpeechToTextModel[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [openMenu, setOpenMenu] = useState<string | number | null>(null)
@@ -24,6 +26,11 @@ function Dashboard() {
 
   const [selectedIds, setSelectedIds] = useState<Set<string | number>>(new Set())
   const [bulkExportOpen, setBulkExportOpen] = useState(false)
+  const [filenameTooltip, setFilenameTooltip] = useState<{
+    text: string
+    x: number
+    y: number
+  } | null>(null)
 useEffect(() => {
     if (openMenu === null) return
 
@@ -86,6 +93,25 @@ useEffect(() => {
 
         const historyData = await historyResponse.json()
         setHistory(Array.isArray(historyData) ? historyData : [])
+
+        try {
+          const modelsResponse = await fetch('/models')
+          if (modelsResponse.ok) {
+            const modelsData: ModelsResponse = await modelsResponse.json()
+            const speechToTextCategory = modelsData.categories?.find(
+              (category) => category.id === 'speech_to_text',
+            )
+            setModels(
+              speechToTextCategory?.models ??
+                modelsData.models?.filter(
+                  (model) => model.category_id === 'speech_to_text',
+                ) ??
+                [],
+            )
+          }
+        } catch {
+          setModels([])
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'server_connection_failed')
       } finally {
@@ -397,6 +423,36 @@ function formatDate(value?: string) {
                         <button
                           type="button"
                           className="dashboard-filename"
+                          onMouseEnter={(event) => {
+                            const button = event.currentTarget
+                            const textElement = button.querySelector('span')
+                            if (!textElement || textElement.scrollWidth <= textElement.clientWidth + 1) {
+                              setFilenameTooltip(null)
+                              return
+                            }
+                            const rect = button.getBoundingClientRect()
+                            setFilenameTooltip({
+                              text: (record.filename || (fa ? 'فایل بدون نام' : 'Untitled file')).replace(/\.[^.]+$/, ''),
+                              x: rect.left + rect.width / 2,
+                              y: rect.top - 8,
+                            })
+                          }}
+                          onMouseLeave={() => setFilenameTooltip(null)}
+                          onFocus={(event) => {
+                            const button = event.currentTarget
+                            const textElement = button.querySelector('span')
+                            if (!textElement || textElement.scrollWidth <= textElement.clientWidth + 1) {
+                              setFilenameTooltip(null)
+                              return
+                            }
+                            const rect = button.getBoundingClientRect()
+                            setFilenameTooltip({
+                              text: (record.filename || (fa ? 'فایل بدون نام' : 'Untitled file')).replace(/\.[^.]+$/, ''),
+                              x: rect.left + rect.width / 2,
+                              y: rect.top - 8,
+                            })
+                          }}
+                          onBlur={() => setFilenameTooltip(null)}
                           onClick={(event) => {
                             event.stopPropagation()
                             navigate(`/dashboard/files/${encodeURIComponent(String(record.id))}`)
@@ -408,9 +464,27 @@ function formatDate(value?: string) {
                       <td data-label={fa ? "تاریخ بارگذاری" : "Uploaded"}>{formatDate(record.created_at)}</td>
                       <td data-label={fa ? "مدت فایل" : "Duration"}>{formatDuration(record.duration_seconds)}</td>
                       <td data-label={fa ? "مدل" : "Model"}>
-                        <span className="dashboard-model" title="Whisper Base">
-                          <span aria-hidden="true">🐋</span> Whisper Base
-                        </span>
+                        {(() => {
+                          const modelId = record.mode?.startsWith('whisper-')
+                            ? record.mode.slice('whisper-'.length)
+                            : record.mode
+                          const model = models.find((item) => item.id === modelId)
+                          const modelName = model?.name[fa ? 'fa' : 'en'] ??
+                            (fa ? 'مدل نامشخص' : 'Unknown model')
+                          const modelIcon = model?.icon ?? '🎙️'
+
+                          return (
+                            <button
+                              type="button"
+                              className="dashboard-model app-tooltip"
+                              aria-label={`Whisper ${modelName}`}
+                              data-tooltip={`Whisper ${modelName}`}
+                              onClick={(event) => event.stopPropagation()}
+                            >
+                              <span aria-hidden="true">{modelIcon}</span>
+                            </button>
+                          )
+                        })()}
                       </td>
                       <td data-label={fa ? "وضعیت" : "Status"}>
                         <span className="dashboard-success">
@@ -495,6 +569,18 @@ function formatDate(value?: string) {
         </div>
       )}
 
+      {filenameTooltip && (
+        <div
+          className="app-tooltip-floating"
+          role="tooltip"
+          style={{
+            left: filenameTooltip.x,
+            top: filenameTooltip.y,
+          }}
+        >
+          {filenameTooltip.text}
+        </div>
+      )}
       <footer className="dashboard-footer">
         NEGAR <span>·</span> {fa ? 'فضای کار شخصی شما' : 'Your personal workspace'}
       </footer>
