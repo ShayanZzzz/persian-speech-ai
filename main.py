@@ -37,7 +37,8 @@ from src.models import (
     GuestUsage,
     MediaFile,
 )
-from src.inference import load_model, transcribe_audio
+from src.inference import transcribe_with_model
+from src.model_registry import load_model_catalog, get_model_config
 from src.media import convert_to_wav, get_media_duration
 
 
@@ -115,7 +116,7 @@ def get_optional_current_user(
         ) from exc
 
 
-model = load_model("base")
+
 
 
 @app.get("/", include_in_schema=False)
@@ -126,6 +127,40 @@ def home():
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/models")
+def get_models():
+    catalog = load_model_catalog()
+    categories = []
+
+    for category in catalog["categories"]:
+        if not category.get("enabled", False):
+            continue
+
+        visible_models = [
+            {key: value for key, value in model.items() if key != "backend"}
+            for model in category["models"]
+            if model.get("visible", False) and model.get("enabled", False)
+        ]
+
+        categories.append({
+            "id": category["id"],
+            "name": category.get("name", {}),
+            "enabled": category["enabled"],
+            "models": visible_models,
+        })
+
+    models = [
+        {**model, "category_id": category["id"]}
+        for category in categories
+        for model in category["models"]
+    ]
+
+    return {
+        "categories": categories,
+        "models": models,
+    }
 
 
 @app.post("/register", status_code=201)
@@ -270,9 +305,23 @@ async def transcribe(
     request: Request,
     response: Response,
     file: UploadFile = File(...),
+    model_name: str = Form("base"),
+    language: str = Form("auto"),
     current_user=Depends(get_optional_current_user),
     db: Session = Depends(get_db),
 ):
+    if language not in {"auto", "fa", "en"}:
+        await file.close()
+        raise HTTPException(status_code=400, detail="Unsupported transcription language.")
+
+    whisper_language = None if language == "auto" else language
+
+    try:
+        model_config = get_model_config("speech_to_text", model_name)
+    except ValueError:
+        await file.close()
+        raise HTTPException(status_code=400, detail="Unsupported speech-to-text model.")
+
     filename = file.filename or "upload"
     extension = os.path.splitext(filename)[1].lower()
 
@@ -353,7 +402,7 @@ async def transcribe(
         duration_seconds = get_media_duration(input_path)
         wav_path = input_path + ".wav"
         convert_to_wav(input_path, wav_path)
-        result = transcribe_audio(model, wav_path)
+        result = transcribe_with_model(model_config, wav_path, language=whisper_language)
 
         if current_user is not None:
             AUDIO_STORAGE_DIR.mkdir(parents=True, exist_ok=True)
@@ -380,7 +429,7 @@ async def transcribe(
                 language=result["language"],
                 text=result["text"],
                 duration_seconds=duration_seconds,
-                mode="whisper-base",
+                mode=f"whisper-{model_name}",
                 segments=json.dumps(result["segments"], ensure_ascii=False),
             )
             db.add(history)
@@ -397,7 +446,7 @@ async def transcribe(
             "language": result["language"],
             "segments": result["segments"],
             "duration_seconds": duration_seconds,
-            "mode": "whisper-base",
+            "mode": f"whisper-{model_name}",
             **(
                 {"files_remaining": max(0, 3 - guest_usage.files_used)}
                 if guest_usage is not None
@@ -955,7 +1004,7 @@ async def api_transcribe(
 
         wav_path = input_path + ".wav"
         convert_to_wav(input_path, wav_path)
-        result = transcribe_audio(model, wav_path)
+        result = transcribe_with_model(get_model_config("speech_to_text", "base"), wav_path)
 
         media_file = MediaFile(
             public_id=secrets.randbelow(9_000_000_000_000_000_000) + 1,

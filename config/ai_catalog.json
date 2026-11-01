@@ -1,0 +1,58 @@
+{
+  "categories": [
+    {
+      "id": "speech_to_text",
+      "name": {
+        "fa": "تبدیل گفتار به متن",
+        "en": "Speech to Text"
+      },
+      "file": "models/speech_to_text.json",
+      "enabled": true
+    },
+    {
+      "id": "text_to_speech",
+      "name": {
+        "fa": "تبدیل متن به گفتار",
+        "en": "Text to Speech"
+      },
+      "file": "models/text_to_speech.json",
+      "enabled": true
+    },
+    {
+      "id": "speech_to_speech",
+      "name": {
+        "fa": "تبدیل گفتار به گفتار",
+        "en": "Speech to Speech"
+      },
+      "file": "models/speech_to_speech.json",
+      "enabled": true
+    },
+    {
+      "id": "audio_intelligence",
+      "name": {
+        "fa": "هوش صوتی",
+        "en": "Audio Intelligence"
+      },
+      "file": "models/audio_intelligence.json",
+      "enabled": true
+    },
+    {
+      "id": "image_generation",
+      "name": {
+        "fa": "تولید تصویر",
+        "en": "Image Generation"
+      },
+      "file": "models/image_generation.json",
+      "enabled": true
+    },
+    {
+      "id": "video_generation",
+      "name": {
+        "fa": "تولید ویدیو",
+        "en": "Video Generation"
+      },
+      "file": "models/video_generation.json",
+      "enabled": true
+    }
+  ]
+}

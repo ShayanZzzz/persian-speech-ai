@@ -362,7 +362,52 @@
 }
 
 .negar-upload .negar-primary-button + .negar-primary-button {
-  margin-inline-start: 8px;
+  display: flex;
+  width: fit-content;
+  margin: 20px auto 0;
+}
+
+.negar-upload .negar-model-control {
+  vertical-align: top;
+}
+
+.negar-upload .negar-model-button {
+  vertical-align: top;
+}
+
+
+.negar-primary-button.negar-file-button {
+  background: #287f91;
+  border-color: #287f91;
+  color: #ffffff;
+}
+
+.negar-primary-button.negar-file-button:hover:not(:disabled) {
+  background: #216d7d;
+  border-color: #216d7d;
+}
+
+.negar-primary-button.negar-transcribe-button:not(.negar-cancel-button) {
+  background: #b7791f;
+  border-color: #b7791f;
+  color: #ffffff;
+}
+
+.negar-primary-button.negar-transcribe-button:not(.negar-cancel-button):hover:not(:disabled) {
+  background: #996515;
+  border-color: #996515;
+}
+
+.negar-primary-button.negar-cancel-button {
+  background: var(--ng-danger);
+  border-color: var(--ng-danger);
+  color: #ffffff;
+}
+
+.negar-primary-button.negar-cancel-button:hover:not(:disabled) {
+  filter: brightness(0.92);
+  background: var(--ng-danger);
+  border-color: var(--ng-danger);
 }
 
 .negar-upload-foot {
@@ -848,4 +893,471 @@
     transition: none !important;
     animation: none !important;
   }
+}
+
+
+/* Whisper model selector beside the file picker */
+.negar-model-control {
+  position: relative;
+  display: inline-block;
+  margin-inline-start: 8px;
+}
+
+.negar-upload .negar-primary-button.negar-model-button {
+  gap: 13px;
+}
+
+.negar-model-label,
+.negar-model-option-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.negar-model-animal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.negar-model-chevron {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  display: block;
+  opacity: 0.85;
+  transition: transform 160ms ease;
+}
+
+.negar-model-menu {
+  position: absolute;
+  z-index: 20;
+  inset-block-start: calc(100% + 8px);
+  inset-inline-start: 0;
+  min-width: 190px;
+  padding: 6px;
+  border: 1px solid var(--ng-line);
+  border-radius: 12px;
+  background: var(--ng-surface);
+  box-shadow: var(--ng-shadow);
+  text-align: start;
+}
+
+.negar-model-menu[hidden] {
+  display: none;
+}
+
+.negar-model-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  text-align: start;
+  cursor: pointer;
+}
+
+.negar-model-option:hover,
+.negar-model-option.is-selected {
+  background: var(--ng-accent-soft);
+}
+
+.negar-model-option small {
+  color: var(--ng-muted);
+  font-size: 10px;
+}
+
+.negar-language-control {
+  margin-inline-start: 8px;
+}
+
+.negar-upload .negar-primary-button.negar-language-button {
+  min-width: 172px;
+  min-height: 44px;
+  margin-top: 22px;
+  padding: 0 13px;
+  gap: 10px;
+  justify-content: flex-start;
+  border-color: var(--ng-line);
+  background: var(--ng-surface);
+  color: var(--ng-ink);
+  box-shadow: none;
+  text-align: start;
+}
+
+.negar-upload .negar-primary-button.negar-language-button:hover:not(:disabled),
+.negar-upload .negar-primary-button.negar-language-button.is-open {
+  transform: translateY(-1px);
+  border-color: var(--ng-muted);
+  background: var(--ng-surface-soft);
+}
+
+.negar-language-icon {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  color: var(--ng-muted);
+}
+
+.negar-language-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.negar-language-content small {
+  color: var(--ng-muted);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.negar-language-content bdi {
+  color: var(--ng-ink);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.negar-language-button .negar-model-chevron {
+  width: 14px;
+  height: 14px;
+  flex-basis: 14px;
+  color: var(--ng-muted);
+}
+
+.negar-language-menu {
+  min-width: 172px;
+}
+
+@media (max-width: 520px) {
+  .negar-upload .negar-language-control {
+    display: inline-block;
+    width: 100%;
+    margin: 8px 0 0;
+  }
+
+  .negar-upload .negar-primary-button.negar-language-button {
+    width: 100%;
+    margin-top: 0;
+  }
+
+  .negar-language-menu {
+    inset-inline: 0;
+    width: 100%;
+  }
+}
+
+/* Keep audio-language text readable in RTL mode */
+.negar-fa .negar-primary-button .negar-language-content {
+  transform: none !important;
+}
+
+.negar-language-content small {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+.negar-language-content bdi {
+  unicode-bidi: isolate;
+}
+
+.negar-fa .negar-primary-button .negar-language-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  transform: none !important;
+}
+
+/* Audio language accent */
+.negar-upload .negar-primary-button.negar-language-button {
+  background: var(--ng-accent-soft);
+  border-color: color-mix(in srgb, var(--ng-accent) 24%, transparent);
+  color: var(--ng-accent);
+}
+
+.negar-language-icon,
+.negar-language-button .negar-model-chevron {
+  color: var(--ng-accent);
+}
+
+.negar-language-content bdi {
+  color: var(--ng-accent);
+}
+
+.negar-upload .negar-primary-button.negar-language-button:hover:not(:disabled),
+.negar-upload .negar-primary-button.negar-language-button.is-open {
+  background: var(--ng-accent-soft);
+  border-color: var(--ng-accent);
+}
+
+/* Audio language - refined teal */
+.negar-upload .negar-primary-button.negar-language-button {
+  background: color-mix(in srgb, #287f91 10%, var(--ng-surface));
+  border-color: color-mix(in srgb, #287f91 32%, var(--ng-line));
+  color: #287f91;
+}
+
+.negar-language-icon,
+.negar-language-button .negar-model-chevron,
+.negar-language-content bdi {
+  color: #287f91;
+}
+
+.negar-language-content small {
+  color: var(--ng-muted);
+}
+
+.negar-upload .negar-primary-button.negar-language-button:hover:not(:disabled),
+.negar-upload .negar-primary-button.negar-language-button.is-open {
+  background: color-mix(in srgb, #287f91 16%, var(--ng-surface));
+  border-color: #287f91;
+}
+
+.negar-dark .negar-upload .negar-primary-button.negar-language-button {
+  background: color-mix(in srgb, #55b8c5 13%, var(--ng-surface));
+  border-color: color-mix(in srgb, #55b8c5 30%, var(--ng-line));
+  color: #75cbd4;
+}
+
+.negar-dark .negar-language-icon,
+.negar-dark .negar-language-button .negar-model-chevron,
+.negar-dark .negar-language-content bdi {
+  color: #75cbd4;
+}
+
+/* Audio language - violet */
+.negar-upload .negar-primary-button.negar-language-button {
+  background: #f0edff;
+  border-color: #d9d2ff;
+  color: #6654c8;
+}
+
+.negar-language-icon,
+.negar-language-button .negar-model-chevron,
+.negar-language-content bdi {
+  color: #6654c8;
+}
+
+.negar-upload .negar-primary-button.negar-language-button:hover:not(:disabled),
+.negar-upload .negar-primary-button.negar-language-button.is-open {
+  background: #e8e2ff;
+  border-color: #a99bea;
+}
+
+.negar-dark .negar-upload .negar-primary-button.negar-language-button {
+  background: #302b49;
+  border-color: #514775;
+  color: #c0b4ff;
+}
+
+.negar-dark .negar-language-icon,
+.negar-dark .negar-language-button .negar-model-chevron,
+.negar-dark .negar-language-content bdi {
+  color: #c0b4ff;
+}
+
+.negar-dark .negar-upload .negar-primary-button.negar-language-button:hover:not(:disabled),
+.negar-dark .negar-upload .negar-primary-button.negar-language-button.is-open {
+  background: #393253;
+  border-color: #8b7bd0;
+}
+
+
+/* Speech model selector - violet design */
+
+.negar-upload .negar-primary-button.negar-selector-button {
+  min-width: 172px;
+  min-height: 44px;
+  margin-top: 22px;
+  padding: 0 13px;
+  gap: 10px;
+  justify-content: flex-start;
+  border: 1px solid #d9d2ff;
+  border-radius: 10px;
+  background: #f0edff;
+  color: #6654c8;
+  box-shadow: none;
+  text-align: start;
+}
+
+.negar-selector-button:hover:not(:disabled),
+.negar-selector-button.is-open {
+  transform: translateY(-1px);
+  background: #e8e2ff !important;
+  border-color: #a99bea !important;
+}
+
+.negar-model-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.negar-model-content small {
+  color: #8275bd;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.negar-model-content .negar-model-label {
+  display: block;
+  color: #5542b3;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.negar-selector-button .negar-model-animal {
+  font-size: 21px;
+}
+
+.negar-selector-button .negar-model-chevron {
+  width: 14px;
+  height: 14px;
+  flex-basis: 14px;
+  color: #6654c8;
+}
+
+.negar-selector-button.is-open .negar-model-chevron {
+  transform: rotate(180deg);
+}
+
+/* RTL layout */
+.negar-fa .negar-primary-button .negar-model-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  transform: none !important;
+}
+
+.negar-fa .negar-selector-button .negar-model-animal {
+  transform: none !important;
+}
+
+/* Dark theme */
+.negar-dark .negar-upload .negar-primary-button.negar-selector-button {
+  background: #302b49;
+  border-color: #514775;
+  color: #c0b4ff;
+}
+
+.negar-dark .negar-model-content small {
+  color: #a99bdc;
+}
+
+.negar-dark .negar-model-content .negar-model-label,
+.negar-dark .negar-selector-button .negar-model-chevron {
+  color: #c0b4ff;
+}
+
+.negar-dark .negar-selector-button:hover:not(:disabled),
+.negar-dark .negar-selector-button.is-open {
+  background: #393253 !important;
+  border-color: #8b7bd0 !important;
+}
+
+/* Darker violet model selector */
+
+.negar-upload .negar-primary-button.negar-selector-button {
+  background: #e1d9ff;
+  border-color: #b9a9f5;
+  color: #49349f;
+}
+
+.negar-model-content small {
+  color: #6956b2;
+}
+
+.negar-model-content .negar-model-label,
+.negar-selector-button .negar-model-chevron {
+  color: #49349f;
+}
+
+.negar-selector-button:hover:not(:disabled),
+.negar-selector-button.is-open {
+  background: #d2c6ff !important;
+  border-color: #9882e8 !important;
+}
+
+.negar-dark .negar-upload .negar-primary-button.negar-selector-button {
+  background: #403568;
+  border-color: #6a579e;
+  color: #d5caff;
+}
+
+.negar-dark .negar-model-content small {
+  color: #b7a8e9;
+}
+
+.negar-dark .negar-model-content .negar-model-label,
+.negar-dark .negar-selector-button .negar-model-chevron {
+  color: #d5caff;
+}
+
+.negar-dark .negar-selector-button:hover:not(:disabled),
+.negar-dark .negar-selector-button.is-open {
+  background: #51427f !important;
+  border-color: #9581d4 !important;
+}
+
+/* Match model selector with the main purple theme */
+
+.negar-upload .negar-primary-button.negar-selector-button {
+  background: var(--ng-accent);
+  border-color: var(--ng-accent);
+  color: #ffffff;
+}
+
+.negar-model-content small {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.negar-model-content .negar-model-label,
+.negar-selector-button .negar-model-chevron {
+  color: #ffffff;
+}
+
+.negar-selector-button:hover:not(:disabled),
+.negar-selector-button.is-open {
+  background: var(--ng-accent-hover) !important;
+  border-color: var(--ng-accent-hover) !important;
+}
+
+.negar-dark .negar-upload .negar-primary-button.negar-selector-button {
+  background: var(--ng-accent);
+  border-color: var(--ng-accent);
+  color: #191824;
+}
+
+.negar-dark .negar-model-content small {
+  color: rgba(25, 24, 36, 0.75);
+}
+
+.negar-dark .negar-model-content .negar-model-label,
+.negar-dark .negar-selector-button .negar-model-chevron {
+  color: #191824;
+}
+
+.negar-dark .negar-selector-button:hover:not(:disabled),
+.negar-dark .negar-selector-button.is-open {
+  background: var(--ng-accent-hover) !important;
+  border-color: var(--ng-accent-hover) !important;
 }

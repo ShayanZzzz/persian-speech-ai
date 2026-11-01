@@ -8,6 +8,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/health': backend,
+      '/models': backend,
       '/register': backend,
       '/login': {
         target: backend,

@@ -1,0 +1,60 @@
+{
+  "models": [
+    {
+      "id": "base",
+      "name": {
+        "fa": "سریع",
+        "en": "Fast"
+      },
+      "icon": "🐱",
+      "visible": true,
+      "enabled": true,
+      "backend": {
+        "type": "whisper",
+        "model": "base"
+      }
+    },
+    {
+      "id": "small",
+      "name": {
+        "fa": "متعادل",
+        "en": "Balanced"
+      },
+      "icon": "🐆",
+      "visible": true,
+      "enabled": true,
+      "backend": {
+        "type": "whisper",
+        "model": "small"
+      }
+    },
+    {
+      "id": "medium",
+      "name": {
+        "fa": "دقیق",
+        "en": "Accurate"
+      },
+      "icon": "🐬",
+      "visible": true,
+      "enabled": true,
+      "backend": {
+        "type": "whisper",
+        "model": "medium"
+      }
+    },
+    {
+      "id": "large-v3",
+      "name": {
+        "fa": "بیشترین دقت",
+        "en": "Maximum accuracy"
+      },
+      "icon": "🐋",
+      "visible": true,
+      "enabled": true,
+      "backend": {
+        "type": "whisper",
+        "model": "large-v3"
+      }
+    }
+  ]
+}
