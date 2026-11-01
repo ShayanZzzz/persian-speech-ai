@@ -1,7 +1,9 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { ChevronDown, Languages } from 'lucide-react'
 import { useAudioPlayer } from './AudioPlayer'
 import './Studio.css'
 import StudioHeader from './StudioHeader'
+import type { ModelId, ModelsResponse, SpeechToTextModel } from './config/models'
 import { useNavigate } from 'react-router-dom'
 
 type Language = 'fa' | 'en'
@@ -10,7 +12,87 @@ function Studio() {
   const navigate = useNavigate()
   const { playLocalFile } = useAudioPlayer()
   const inputRef = useRef<HTMLInputElement>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
+  const requestIdRef = useRef(0)
   const [file, setFile] = useState<File | null>(null)
+  const [modelName, setModelName] = useState<ModelId>("base")
+  const [transcriptionLanguage, setTranscriptionLanguage] = useState<'auto' | 'fa' | 'en'>('auto')
+  const [availableModels, setAvailableModels] = useState<SpeechToTextModel[]>([])
+  const selectedModel = availableModels.find((model) => model.id === modelName)
+
+  useEffect(() => {
+    const loadModels = async () => {
+      try {
+        const response = await fetch('/models')
+        if (!response.ok) throw new Error('Failed to load models')
+
+        const data: ModelsResponse = await response.json()
+        const category = data.categories.find(
+          (item) => item.id === 'speech_to_text' && item.enabled
+        )
+
+        const models = category?.models ?? []
+        setAvailableModels(models)
+
+        if (models.length > 0 && !models.some((model) => model.id === modelName)) {
+          setModelName(models[0].id)
+        }
+      } catch (error) {
+        console.error('Unable to load speech-to-text models:', error)
+      }
+    }
+
+    loadModels()
+  }, [])
+
+  const [modelMenuOpen, setModelMenuOpen] = useState(false)
+  const modelControlRef = useRef<HTMLDivElement>(null)
+  const [languageMenuOpen, setLanguageMenuOpen] = useState(false)
+  const languageControlRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!modelMenuOpen) return
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!modelControlRef.current?.contains(event.target as Node)) {
+        setModelMenuOpen(false)
+      }
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setModelMenuOpen(false)
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [modelMenuOpen])
+
+  useEffect(() => {
+    if (!languageMenuOpen) return
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!languageControlRef.current?.contains(event.target as Node)) {
+        setLanguageMenuOpen(false)
+      }
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setLanguageMenuOpen(false)
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [languageMenuOpen])
   const [dragging, setDragging] = useState(false)
   const [lang, setLang] = useState<Language>('fa')
   const [darkMode, setDarkMode] = useState(
@@ -24,6 +106,7 @@ function Studio() {
 
   const acceptFile = (selectedFile?: File) => {
     if (!selectedFile) return
+    cancelTranscription()
 
     const isVideo =
       selectedFile.type.startsWith('video/') ||
@@ -40,8 +123,19 @@ function Studio() {
     setResult(null)
   }
 
+  const cancelTranscription = () => {
+    requestIdRef.current += 1
+    abortControllerRef.current?.abort()
+    abortControllerRef.current = null
+    setProcessing(false)
+  }
+
   const transcribeFile = async () => {
     if (!file || processing) return
+
+    const controller = new AbortController()
+    const requestId = ++requestIdRef.current
+    abortControllerRef.current = controller
 
     setProcessing(true)
     setError('')
@@ -51,9 +145,12 @@ function Studio() {
     try {
       const formData = new FormData()
       formData.append('file', file)
+      formData.append('model_name', modelName)
+      if (transcriptionLanguage !== 'auto') {
+        formData.append('language', transcriptionLanguage)
+      }
 
       const token = localStorage.getItem('access_token')
-
       const response = await fetch('/transcribe', {
         method: 'POST',
         headers: token
@@ -61,7 +158,11 @@ function Studio() {
           : {},
         body: formData,
         credentials: 'include',
+        signal: controller.signal,
       })
+
+      if (requestId !== requestIdRef.current) return
+
       const data = await response.json().catch(() => ({}))
 
       if (!response.ok) {
@@ -73,22 +174,31 @@ function Studio() {
               : 'You have used all 3 free files. Create an account to continue.'
           )
         }
+
         const message =
           typeof data.detail === 'string'
             ? data.detail
             : (fa ? 'تبدیل فایل انجام نشد.' : 'Transcription failed.')
+
         throw new Error(message)
       }
 
-      setResult(data)
+      if (requestId === requestIdRef.current) {
+        setResult(data)
+      }
     } catch (err) {
+      if (controller.signal.aborted || requestId !== requestIdRef.current) return
+
       setError(
         err instanceof Error
           ? err.message
           : (fa ? 'خطای نامشخصی رخ داد.' : 'An unexpected error occurred.')
       )
     } finally {
-      setProcessing(false)
+      if (requestId === requestIdRef.current) {
+        abortControllerRef.current = null
+        setProcessing(false)
+      }
     }
   }
 
@@ -98,7 +208,7 @@ function Studio() {
       : `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 
   return (
-    <main className={`negar-page ${fa ? 'negar-fa' : 'negar-en'}`} dir={fa ? 'rtl' : 'ltr'}>
+    <main className={`negar-page ${darkMode ? 'negar-dark' : '' } ${fa ? 'negar-fa' : 'negar-en'}`} dir={fa ? 'rtl' : 'ltr'}>
       <StudioHeader
         title={fa ? 'گفتار به متن' : 'Speech to text'}
         lang={lang}
@@ -165,7 +275,10 @@ function Studio() {
                 className="negar-remove-file"
                 type="button"
                 onClick={() => {
+                  cancelTranscription()
                   setFile(null)
+                  setError('')
+                  setResult(null)
                   if (inputRef.current) inputRef.current.value = ''
                 }}
                 aria-label={fa ? 'حذف فایل انتخاب‌شده' : 'Remove selected file'}
@@ -186,21 +299,118 @@ function Studio() {
             </>
           )}
 
-          <button className="negar-primary-button" type="button" onClick={() => inputRef.current?.click()}>
-            {fa ? 'انتخاب فایل' : 'Choose a file'} <span aria-hidden="true">{fa ? '↖' : '↗'}</span>
+          <button className="negar-primary-button negar-file-button" type="button" onClick={() => inputRef.current?.click()}>
+            {fa ? 'انتخاب فایل' : 'Choose a file'}
           </button>
+          <div className="negar-model-control" ref={modelControlRef}>
+            <button
+              className={`negar-primary-button negar-model-button negar-selector-button ${modelMenuOpen ? 'is-open' : ''}`}
+              type="button"
+              disabled={processing}
+              aria-label={fa ? 'انتخاب مدل تشخیص گفتار' : 'Select transcription model'}
+              aria-expanded={modelMenuOpen}
+              aria-haspopup="true"
+              onClick={() => {
+                setLanguageMenuOpen(false)
+                setModelMenuOpen(open => !open)
+              }}
+            >
+              <span className="negar-model-animal" aria-hidden="true">
+                {selectedModel?.icon ?? '🎙️'}
+              </span>
+              <span className="negar-model-content">
+                <small>{fa ? 'مدل تشخیص گفتار' : 'SPEECH MODEL'}</small>
+                <bdi className="negar-model-label" dir="auto">
+                  {selectedModel?.name[fa ? 'fa' : 'en'] ?? modelName}
+                </bdi>
+              </span>
+              <ChevronDown className="negar-model-chevron" aria-hidden="true" />
+            </button>
+            <div id="negar-model-menu" className="negar-model-menu" hidden={!modelMenuOpen}>
+              {availableModels.map((model) => (
+                <button
+                  key={model.id}
+                  type="button"
+                  className={`negar-model-option ${modelName === model.id ? 'is-selected' : ''}`}
+                  onClick={() => {
+                    setModelName(model.id)
+                    setModelMenuOpen(false)
+                  }}
+                >
+                  <span className="negar-model-option-main">
+                    <span className="negar-model-animal" aria-hidden="true">
+                      {model.icon}
+                    </span>
+                    <bdi dir="auto">{model.name[fa ? 'fa' : 'en']}</bdi>
+                  </span>
+                  <small>{model.id}</small>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="negar-model-control negar-language-control" ref={languageControlRef}>
+            <button
+              className={`negar-primary-button negar-model-button negar-language-button ${languageMenuOpen ? 'is-open' : ''}`}
+              type="button"
+              disabled={processing}
+              aria-label={fa ? 'انتخاب زبان فایل صوتی' : 'Select audio language'}
+              aria-expanded={languageMenuOpen}
+              aria-haspopup="true"
+              onClick={() => {
+                setModelMenuOpen(false)
+                setLanguageMenuOpen(open => !open)
+              }}
+            >
+              <Languages className="negar-language-icon" aria-hidden="true" />
+              <span className="negar-language-content">
+                <small>{fa ? 'زبان صوت' : 'LANGUAGE'}</small>
+                <bdi dir="auto">
+                  {transcriptionLanguage === 'auto'
+                    ? (fa ? 'تشخیص خودکار' : 'Auto Detect')
+                    : transcriptionLanguage === 'fa'
+                      ? (fa ? 'فارسی' : 'Persian')
+                      : (fa ? 'انگلیسی' : 'English')}
+                </bdi>
+              </span>
+              <ChevronDown className="negar-model-chevron" aria-hidden="true" />
+            </button>
+
+            <div
+              id="negar-language-menu"
+              className="negar-model-menu negar-language-menu"
+              hidden={!languageMenuOpen}
+            >
+              {[
+                { id: 'auto', fa: 'تشخیص خودکار', en: 'Auto Detect' },
+                { id: 'fa', fa: 'فارسی', en: 'Persian' },
+                { id: 'en', fa: 'انگلیسی', en: 'English' },
+              ].map((language) => (
+                <button
+                  key={language.id}
+                  type="button"
+                  className={`negar-model-option ${transcriptionLanguage === language.id ? 'is-selected' : ''}`}
+                  onClick={() => {
+                    setTranscriptionLanguage(language.id as 'auto' | 'fa' | 'en')
+                    setLanguageMenuOpen(false)
+                  }}
+                >
+                  <bdi dir="auto">{fa ? language.fa : language.en}</bdi>
+                </button>
+              ))}
+            </div>
+          </div>
 
           {file && (
             <button
-              className="negar-primary-button"
+              className={`negar-primary-button negar-transcribe-button ${processing ? "negar-cancel-button" : ""}`}
               type="button"
-              disabled={processing}
-              onClick={transcribeFile}
+              onClick={processing ? cancelTranscription : transcribeFile}
             >
               {processing
-                ? (fa ? 'در حال تبدیل…' : 'Transcribing…')
+                ? (fa ? 'لغو پردازش' : 'Cancel processing')
                 : (fa ? 'تبدیل به متن' : 'Transcribe to text')}
-              {!processing && <span aria-hidden="true">↗</span>}
+              
             </button>
           )}
 
