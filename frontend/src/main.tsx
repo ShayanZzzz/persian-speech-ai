@@ -6,6 +6,7 @@ import './index.css'
 import App from './App'
 import MediaStudio from './MediaStudio'
 import Studio from './Studio'
+import TTSStudio from './TTSStudio'
 import VideoEditor from './VideoEditor'
 import ProtectedRoute from './ProtectedRoute'
 import Login from './Login'
@@ -21,6 +22,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/" element={<App />} />
           <Route path="/studio" element={<MediaStudio />} />
           <Route path="/studio/stt" element={<Studio />} />
+          <Route path="/studio/tts" element={<TTSStudio />} />
           <Route path="/studio/negar" element={<Navigate to="/studio/stt" replace />} />
           <Route
             path="/studio/video"

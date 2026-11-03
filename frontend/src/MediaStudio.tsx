@@ -435,6 +435,38 @@ function MediaStudio() {
               </div>
             </Link>
 
+            <Link className="ms-tool-card" to="/studio/tts">
+              <div className="ms-tool-preview ms-preview-tts">
+                <div className="ms-tts-orb">♫</div>
+                <div className="ms-tts-wave">
+                  {Array.from({ length: 25 }, (_, index) => (
+                    <i key={index} style={{ height: `${15 + ((index * 31) % 75)}%` }} />
+                  ))}
+                </div>
+                <span className="ms-preview-corner">{fa ? 'پیش‌نمایش رابط' : 'UI PREVIEW'}</span>
+              </div>
+              <div className="ms-tool-top">
+                <span className="ms-tool-number">03</span>
+                <span className="ms-tool-symbol" aria-hidden="true">♫</span>
+                <span className="ms-tool-status is-pending">
+                  <span />
+                  {fa ? 'در حال توسعه' : 'IN DEVELOPMENT'}
+                </span>
+              </div>
+              <div className="ms-tool-content">
+                <span className="ms-tool-category">{fa ? 'تبدیل متن به گفتار' : 'TEXT TO SPEECH'}</span>
+                <h3>{fa ? 'تولید گفتار با هوش مصنوعی' : 'AI Text to Speech'}</h3>
+                <p>
+                  {fa
+                    ? 'متن فارسی یا انگلیسی را به گفتاری طبیعی تبدیل کن و خروجی صوتی بگیر.'
+                    : 'Turn Persian or English text into natural-sounding speech and generate audio.'}
+                </p>
+              </div>
+              <div className="ms-tool-footer">
+                <span>{fa ? 'ورود به استودیوی گفتار' : 'Open speech studio'}</span>
+                <span className="ms-tool-arrow" aria-hidden="true">{fa ? '↖' : '↗'}</span>
+              </div>
+            </Link>
             <article className="ms-tool-card is-disabled">
               <div className="ms-tool-preview ms-preview-audio-lab">
                 <div className="ms-lab-orb"><span>∿</span></div>
@@ -446,7 +478,7 @@ function MediaStudio() {
                 <span className="ms-preview-corner">{fa ? 'در حال توسعه' : 'IN DEVELOPMENT'}</span>
               </div>
               <div className="ms-tool-top">
-                <span className="ms-tool-number">03</span>
+                <span className="ms-tool-number">04</span>
                 <span className="ms-tool-symbol" aria-hidden="true">∿</span>
                 <span className="ms-tool-status is-pending">
                   <span />

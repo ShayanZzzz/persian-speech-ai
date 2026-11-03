@@ -100,6 +100,7 @@ export default function StudioHeader({
   const links = [
     { to: '/studio', label: fa ? 'خانهٔ استودیو' : 'Studio home' },
     { to: '/studio/stt', label: fa ? 'گفتار به متن' : 'Speech to text' },
+    { to: '/studio/tts', label: fa ? 'متن به گفتار' : 'Text to speech' },
     { to: '/studio/video', label: fa ? 'تدوین و زیرنویس ویدیو' : 'Video & subtitles' },
     {
       to: accountHref,

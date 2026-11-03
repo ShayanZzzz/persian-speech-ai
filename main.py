@@ -62,6 +62,24 @@ optional_bearer_scheme = HTTPBearer(auto_error=False)
 
 MAX_FILE_SIZE = 25 * 1024 * 1024
 
+TTS_VOICES = {
+    "alba": {"name": "Alba", "language": "en", "active": True},
+    "anna": {"name": "Anna", "language": "en", "active": True},
+    "jean": {"name": "Jean", "language": "en", "active": True},
+    "cosette": {"name": "Cosette", "language": "en", "active": True},
+    "marius": {"name": "Marius", "language": "en", "active": True},
+    "javert": {"name": "Javert", "language": "en", "active": True},
+}
+
+
+class TTSGenerateRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=2000)
+    voice: str
+    language: str = "en"
+    format: str = "wav"
+
+
+
 ALLOWED_EXTENSIONS = {
     ".wav",
     ".mp3",
@@ -123,6 +141,22 @@ def get_optional_current_user(
 def home():
     return FileResponse(STATIC_DIR / "index.html")
 
+
+
+
+@app.get("/tts/voices")
+def get_tts_voices():
+    return {
+        "voices": [
+            {
+                "id": voice_id,
+                "name": voice["name"],
+                "language": voice["language"],
+            }
+            for voice_id, voice in TTS_VOICES.items()
+            if voice["active"]
+        ]
+    }
 
 @app.get("/health")
 def health():
@@ -737,6 +771,96 @@ async def export_video(
         raise HTTPException(status_code=500, detail="Video export failed.") from exc
     finally:
         await file.close()
+
+
+
+@app.post("/tts/generate")
+@limiter.limit("5/minute")
+def generate_tts(
+    payload: TTSGenerateRequest,
+    request: Request,
+    current_user=Depends(require_current_user),
+    db: Session = Depends(get_db),
+):
+    text = payload.text.strip()
+
+    if not text:
+        raise HTTPException(status_code=422, detail="Text cannot be empty.")
+
+    if payload.language != "en":
+        raise HTTPException(status_code=400, detail="Only English is supported.")
+
+    if payload.format != "wav":
+        raise HTTPException(status_code=400, detail="Only WAV format is supported.")
+
+    voice = TTS_VOICES.get(payload.voice)
+    if voice is None or not voice["active"] or voice["language"] != "en":
+        raise HTTPException(status_code=400, detail="Selected voice is unavailable.")
+
+    cli_path = Path(__file__).parent / ".venv-tts" / "bin" / "pocket-tts"
+    if not cli_path.is_file():
+        raise HTTPException(status_code=503, detail="TTS engine is not installed.")
+
+    AUDIO_STORAGE_DIR.mkdir(parents=True, exist_ok=True)
+    output_path = AUDIO_STORAGE_DIR / f"tts_{uuid.uuid4().hex}.wav"
+
+    command = [
+        str(cli_path),
+        "generate",
+        "--text", text,
+        "--voice", payload.voice,
+        "--language", "english",
+        "--device", "cpu",
+        "--output-path", str(output_path),
+        "--quiet",
+    ]
+
+    try:
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            timeout=180,
+            check=False,
+        )
+    except subprocess.TimeoutExpired as exc:
+        output_path.unlink(missing_ok=True)
+        raise HTTPException(status_code=504, detail="Speech generation timed out.") from exc
+    except Exception as exc:
+        output_path.unlink(missing_ok=True)
+        raise HTTPException(status_code=500, detail="Speech generation failed.") from exc
+
+    if result.returncode != 0 or not output_path.is_file() or output_path.stat().st_size == 0:
+        output_path.unlink(missing_ok=True)
+        raise HTTPException(status_code=500, detail="Speech generation failed.")
+
+    media_file = MediaFile(
+        public_id=secrets.randbelow(9_000_000_000_000_000_000) + 1,
+        user_id=current_user.id,
+        filename=f"speech_{payload.voice}.wav",
+        media_type="audio/wav",
+        file_size_bytes=output_path.stat().st_size,
+        storage_path=str(output_path.relative_to(Path(__file__).parent)),
+        detected_language="en",
+    )
+
+    try:
+        db.add(media_file)
+        db.commit()
+        db.refresh(media_file)
+    except Exception as exc:
+        db.rollback()
+        output_path.unlink(missing_ok=True)
+        raise HTTPException(status_code=500, detail="Could not save generated audio.") from exc
+
+    return {
+        "public_id": media_file.public_id,
+        "filename": media_file.filename,
+        "audio_url": f"/media/{media_file.public_id}/audio",
+        "voice": payload.voice,
+        "language": "en",
+        "format": "wav",
+    }
 
 
 @app.get("/media/{public_id}/audio")
