@@ -28,6 +28,11 @@ class User(Base):
         back_populates="owner"
     )
 
+    voice_profiles: Mapped[list["VoiceProfile"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
 
 class MediaFile(Base):
     __tablename__ = "media_files"
@@ -138,4 +143,44 @@ class GuestUsage(Base):
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now, onupdate=utc_now
+    )
+
+
+class VoiceProfile(Base):
+    __tablename__ = "voice_profiles"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="pending", nullable=False)
+
+    reference_audio_path: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+    )
+
+    voice_embedding_path: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    consent_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+    )
+
+    user: Mapped["User"] = relationship(
+        back_populates="voice_profiles"
     )

@@ -2,7 +2,7 @@ import hashlib
 import json
 import secrets
 from src.api_keys import create_api_key, revoke_api_key
-from src.models import Organization, OrganizationAPIKey
+from src.models import Organization, OrganizationAPIKey, VoiceProfile, utc_now
 from pydantic import BaseModel, Field
 import math
 import os
@@ -39,7 +39,7 @@ from src.models import (
 )
 from src.inference import transcribe_with_model
 from src.model_registry import load_model_catalog, get_model_config
-from src.media import convert_to_wav, get_media_duration
+from src.media import convert_to_wav, get_media_duration, validate_audio_file
 
 
 app = FastAPI(title="Persian Speech AI")
@@ -50,6 +50,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 STATIC_DIR = Path(__file__).parent / "static"
 AUDIO_STORAGE_DIR = Path(__file__).parent / "media_uploads"
+VOICE_PROFILE_STORAGE_DIR = Path(__file__).parent / "private_voice_profiles"
 
 app.mount(
     "/static",
@@ -157,6 +158,190 @@ def get_tts_voices():
             if voice["active"]
         ]
     }
+
+
+@app.post("/voice-profiles", status_code=201)
+@limiter.limit("5/minute")
+async def create_voice_profile(
+    request: Request,
+    name: str = Form(...),
+    consent: bool = Form(...),
+    file: UploadFile = File(...),
+    current_user=Depends(require_current_user),
+    db: Session = Depends(get_db),
+):
+    allowed_extensions = {".wav", ".mp3", ".m4a", ".flac", ".ogg"}
+    extension = Path(file.filename or "").suffix.lower()
+
+    profile_name = name.strip()
+    if not profile_name or len(profile_name) > 100:
+        raise HTTPException(status_code=400, detail="Name must be between 1 and 100 characters.")
+
+    if not consent:
+        raise HTTPException(status_code=400, detail="Explicit speaker consent is required.")
+
+    if extension not in allowed_extensions:
+        raise HTTPException(status_code=400, detail="Unsupported audio format.")
+
+    VOICE_PROFILE_STORAGE_DIR.mkdir(mode=0o700, parents=True, exist_ok=True)
+    storage_path = VOICE_PROFILE_STORAGE_DIR / f"{uuid.uuid4().hex}{extension}"
+
+    file_size = 0
+    try:
+        with storage_path.open("xb") as destination:
+            while True:
+                chunk = await file.read(1024 * 1024)
+                if not chunk:
+                    break
+
+                file_size += len(chunk)
+                if file_size > MAX_FILE_SIZE:
+                    raise HTTPException(status_code=413, detail="File exceeds the 25 MB limit.")
+
+                destination.write(chunk)
+
+        if file_size == 0:
+            raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+
+        os.chmod(storage_path, 0o600)
+
+        try:
+            duration = validate_audio_file(str(storage_path))
+        except (ValueError, RuntimeError) as exc:
+            raise HTTPException(status_code=400, detail="Invalid or unreadable audio file.") from exc
+
+        profile = VoiceProfile(
+            user_id=current_user.id,
+            name=profile_name,
+            status="pending",
+            reference_audio_path=str(storage_path),
+            voice_embedding_path=None,
+            consent_at=utc_now(),
+        )
+
+        db.add(profile)
+        db.commit()
+        db.refresh(profile)
+
+        return {
+            "id": profile.id,
+            "name": profile.name,
+            "status": profile.status,
+            "duration_seconds": duration,
+            "created_at": profile.created_at,
+        }
+
+    except Exception:
+        db.rollback()
+        storage_path.unlink(missing_ok=True)
+        raise
+    finally:
+        await file.close()
+
+
+class VoiceProfileRenameRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+
+
+@app.get("/voice-profiles")
+def list_voice_profiles(
+    current_user=Depends(require_current_user),
+    db: Session = Depends(get_db),
+):
+    profiles = (
+        db.query(VoiceProfile)
+        .filter(VoiceProfile.user_id == current_user.id)
+        .order_by(VoiceProfile.created_at.desc())
+        .all()
+    )
+
+    return {
+        "voice_profiles": [
+            {
+                "id": profile.id,
+                "name": profile.name,
+                "status": profile.status,
+                "created_at": profile.created_at,
+            }
+            for profile in profiles
+        ]
+    }
+
+
+@app.patch("/voice-profiles/{profile_id}")
+def rename_voice_profile(
+    profile_id: int,
+    payload: VoiceProfileRenameRequest,
+    current_user=Depends(require_current_user),
+    db: Session = Depends(get_db),
+):
+    profile = (
+        db.query(VoiceProfile)
+        .filter(
+            VoiceProfile.id == profile_id,
+            VoiceProfile.user_id == current_user.id,
+        )
+        .first()
+    )
+
+    if profile is None:
+        raise HTTPException(status_code=404, detail="Voice profile not found.")
+
+    normalized_name = payload.name.strip()
+    if not normalized_name:
+        raise HTTPException(status_code=400, detail="Name cannot be empty.")
+    profile.name = normalized_name
+
+    db.commit()
+    db.refresh(profile)
+
+    return {
+        "id": profile.id,
+        "name": profile.name,
+        "status": profile.status,
+        "created_at": profile.created_at,
+    }
+
+
+@app.delete("/voice-profiles/{profile_id}", status_code=204)
+def delete_voice_profile(
+    profile_id: int,
+    current_user=Depends(require_current_user),
+    db: Session = Depends(get_db),
+):
+    profile = (
+        db.query(VoiceProfile)
+        .filter(
+            VoiceProfile.id == profile_id,
+            VoiceProfile.user_id == current_user.id,
+        )
+        .first()
+    )
+
+    if profile is None:
+        raise HTTPException(status_code=404, detail="Voice profile not found.")
+
+    storage_root = VOICE_PROFILE_STORAGE_DIR.resolve()
+    paths_to_delete = [
+        profile.reference_audio_path,
+        profile.voice_embedding_path,
+    ]
+
+    db.delete(profile)
+    db.commit()
+
+    for stored_path in paths_to_delete:
+        if not stored_path:
+            continue
+
+        candidate = Path(stored_path).resolve()
+        if candidate.is_relative_to(storage_root):
+            try:
+                candidate.unlink(missing_ok=True)
+            except OSError:
+                pass
+
+    return Response(status_code=204)
 
 @app.get("/health")
 def health():

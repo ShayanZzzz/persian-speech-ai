@@ -1,3 +1,4 @@
+import json
 import shutil
 import subprocess
 
@@ -58,3 +59,39 @@ def convert_to_wav(input_path: str, output_path: str) -> None:
             "Could not extract audio. The file may be invalid "
             "or may not contain an audio track."
         ) from exc
+
+
+def validate_audio_file(input_path: str) -> float:
+    """Validate that a file contains a readable audio stream."""
+    ffprobe = shutil.which("ffprobe")
+    if ffprobe is None:
+        raise RuntimeError("FFprobe is not installed or is not available in PATH.")
+
+    command = [
+        ffprobe,
+        "-v", "error",
+        "-select_streams", "a:0",
+        "-show_entries", "stream=codec_type:format=duration",
+        "-of", "json",
+        input_path,
+    ]
+
+    try:
+        result = subprocess.run(
+            command,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+        data = json.loads(result.stdout)
+        streams = data.get("streams", [])
+        duration = float(data.get("format", {}).get("duration", 0))
+
+        if not streams or duration <= 0:
+            raise ValueError("The file does not contain a valid audio stream.")
+
+        return duration
+
+    except (subprocess.SubprocessError, ValueError, KeyError, OSError, json.JSONDecodeError) as exc:
+        raise ValueError("Invalid or unreadable audio file.") from exc
