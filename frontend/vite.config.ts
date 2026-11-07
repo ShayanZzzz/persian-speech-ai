@@ -9,6 +9,7 @@ export default defineConfig({
     proxy: {
       '/health': backend,
       '/tts': backend,
+      '/voice-profiles': backend,
       '/models': backend,
       '/register': backend,
       '/login': {

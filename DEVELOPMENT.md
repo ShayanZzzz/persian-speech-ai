@@ -1,6 +1,6 @@
 # Development Guide --- Persian Speech AI / Negar
 
-Last updated: 2026-11-04
+Last updated: 2026-11-07
 
 This file is the project handoff document. Update it when architecture,
 implementation status, or important decisions change. Prefer concise,
@@ -158,7 +158,7 @@ work unless explicitly required.
 
 ## 6. Current task: Custom Voice Profiles
 
-**Status:** Backend CRUD implementation and the main API behavior have been tested successfully. Frontend profile management is the next step.
+**Status:** Backend CRUD and frontend profile management have been implemented and manually verified. Upload, listing, rename, and delete work. Custom voice generation is not yet available.
 
 ### Agreed design
 
@@ -274,7 +274,13 @@ On 2026-11-05, the following API operations were manually tested:
 - `DELETE /voice-profiles/1`: returned `204 No Content`.
 - A subsequent list request returned `200 OK` with an empty `voice_profiles` array.
 
-The test confirmed the main create, list, rename, validation, not-found, and delete flows. Cross-user ownership isolation and several negative upload cases have not yet been independently tested.
+Cross-user ownership isolation was subsequently tested using two users and an in-memory SQLite database. Direct endpoint-function tests confirmed:
+- Another user cannot list the owner's profile.
+- Another user cannot rename the owner's profile (404).
+- Another user cannot delete the owner's profile (404).
+- The owner's database record and reference audio file remain unchanged.
+
+These tests exercised endpoint functions directly, not HTTP requests through ASGI/TestClient. HTTP-level authentication tests and negative upload cases remain pending.
 
 A missing `json` import in `src/media.py` was discovered during API testing and fixed.
 
@@ -299,19 +305,23 @@ Syntax, route registration, and the API behaviors listed above have been verifie
 
 ## 7. Next steps --- current priority
 
-### Step 1 --- Frontend profile management
+### Frontend profile management --- implemented and manually verified
 
-Implement the custom voice-profile management UI:
+Verified frontend capabilities:
 
-- A "Custom Voice" option in the voice picker
-- A modal listing only the signed-in user's profiles
+- Custom voice-profile management section in the TTS studio
+- Listing the signed-in user's profiles
 - Upload form with explicit speaker consent
 - Rename and delete controls
-- Clear `pending` status messaging
-- Selection/activation of a profile in the UI
+- `pending` status display
+- Successful upload, rename, and delete behavior confirmed manually
 
-Do not imply that selecting a profile enables voice cloning. Until an engine is integrated, the UI must distinguish profile storage and management from actual speech generation.
+Still pending:
 
+- Verify whether profile selection/activation is needed in the final UI
+- Connect custom profiles to speech generation after a cloning engine is selected
+
+Do not imply that profile storage or selection enables voice cloning. The current implementation manages reference audio and profile metadata only.
 ### Step 2 --- Evaluate a cloning engine
 
 After frontend management is stable, evaluate candidate engines against:
@@ -335,7 +345,7 @@ The following cases still need dedicated tests:
 - Unsupported extensions
 - Empty and malformed audio
 - Oversized uploads and temporary-file cleanup
-- Cross-user profile access and ownership isolation
+- HTTP-level cross-user authorization tests (direct endpoint-function ownership tests have passed)
 - File cleanup behavior when filesystem operations fail
 
 ## 8. Other known pending work

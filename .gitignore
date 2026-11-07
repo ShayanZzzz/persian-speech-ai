@@ -225,3 +225,6 @@ media_uploads/
 # Local database backups and temporary editor backups
 backups/
 *.bak
+
+# Private voice profile uploads
+private_voice_profiles/

@@ -11,6 +11,13 @@ type TTSVoice = {
   language: string
 }
 
+type VoiceProfile = {
+  id: number
+  name: string
+  status: string
+  created_at: string
+}
+
 function TTSStudio() {
   const [lang, setLang] = useState<Language>('fa')
   const [textLanguage, setTextLanguage] = useState<Language>('en')
@@ -29,6 +36,17 @@ function TTSStudio() {
   const [voicesLoading, setVoicesLoading] = useState(true)
   const [voicesError, setVoicesError] = useState('')
   const [voicesRetry, setVoicesRetry] = useState(0)
+  const [voiceProfiles, setVoiceProfiles] = useState<VoiceProfile[]>([])
+  const [voiceProfilesOpen, setVoiceProfilesOpen] = useState(false)
+  const [voiceProfilesLoading, setVoiceProfilesLoading] = useState(false)
+  const [voiceProfilesError, setVoiceProfilesError] = useState('')
+  const [newProfileName, setNewProfileName] = useState('')
+  const [newProfileFile, setNewProfileFile] = useState<File | null>(null)
+  const [profileConsent, setProfileConsent] = useState(false)
+  const [profileUploading, setProfileUploading] = useState(false)
+  const [editingProfileId, setEditingProfileId] = useState<number | null>(null)
+  const [editingProfileName, setEditingProfileName] = useState("")
+  const [profileActionId, setProfileActionId] = useState<number | null>(null)
 
   useEffect(() => {
     let active = true
@@ -68,10 +86,208 @@ function TTSStudio() {
   }, [voicesRetry])
 
   useEffect(() => {
+    const token = localStorage.getItem('access_token')
+
+    if (!token) {
+      setVoiceProfiles([])
+      return
+    }
+
+    let active = true
+
+    async function loadVoiceProfiles() {
+      setVoiceProfilesLoading(true)
+      setVoiceProfilesError('')
+
+      try {
+        const response = await fetch('/voice-profiles', {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            throw new Error('نشست ورود معتبر نیست؛ دوباره وارد حساب کاربری شو.')
+          }
+          throw new Error('دریافت پروفایل‌های صدا ناموفق بود.')
+        }
+
+        const data: { voice_profiles: VoiceProfile[] } = await response.json()
+
+        if (active) {
+          setVoiceProfiles(
+            Array.isArray(data.voice_profiles) ? data.voice_profiles : [],
+          )
+        }
+      } catch (error) {
+        if (active) {
+          setVoiceProfilesError(
+            error instanceof Error ? error.message : 'خطا در دریافت پروفایل‌ها.',
+          )
+        }
+      } finally {
+        if (active) setVoiceProfilesLoading(false)
+      }
+    }
+
+    loadVoiceProfiles()
+
+    return () => {
+      active = false
+    }
+  }, [])
+
+  useEffect(() => {
     return () => {
       if (audioUrl) URL.revokeObjectURL(audioUrl)
     }
   }, [audioUrl])
+
+  const handleUploadVoiceProfile = async () => {
+    const token = localStorage.getItem('access_token')
+
+    if (!token) {
+      setVoiceProfilesError('برای ثبت پروفایل صدا ابتدا وارد حساب کاربری شو.')
+      return
+    }
+
+    if (!newProfileName.trim() || !newProfileFile || !profileConsent) {
+      setVoiceProfilesError('نام، فایل صوتی و تأیید رضایت الزامی هستند.')
+      return
+    }
+
+    setProfileUploading(true)
+    setVoiceProfilesError('')
+
+    try {
+      const formData = new FormData()
+      formData.append('name', newProfileName.trim())
+      formData.append('consent', 'true')
+      formData.append('file', newProfileFile)
+
+      const response = await fetch('/voice-profiles', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        throw new Error(
+          response.status === 401
+            ? 'نشست ورود معتبر نیست؛ دوباره وارد حساب کاربری شو.'
+            : data.detail || 'ثبت پروفایل صدا ناموفق بود.',
+        )
+      }
+
+      const listResponse = await fetch('/voice-profiles', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+
+      if (!listResponse.ok) {
+        throw new Error('پروفایل ثبت شد، اما دریافت فهرست جدید ناموفق بود.')
+      }
+
+      const data: { voice_profiles: VoiceProfile[] } = await listResponse.json()
+      setVoiceProfiles(
+        Array.isArray(data.voice_profiles) ? data.voice_profiles : [],
+      )
+      setNewProfileName('')
+      setNewProfileFile(null)
+      setProfileConsent(false)
+      setVoiceProfilesError('')
+    } catch (error) {
+      setVoiceProfilesError(
+        error instanceof Error ? error.message : 'خطا در ثبت پروفایل صدا.',
+      )
+    } finally {
+      setProfileUploading(false)
+    }
+  }
+
+  const handleRenameVoiceProfile = async (profileId: number) => {
+    const token = localStorage.getItem("access_token")
+    const name = editingProfileName.trim()
+
+    if (!token || !name) {
+      setVoiceProfilesError(fa ? "نام پروفایل نمی‌تواند خالی باشد." : "Profile name cannot be empty.")
+      return
+    }
+
+    setProfileActionId(profileId)
+    setVoiceProfilesError("")
+
+    try {
+      const response = await fetch(`/voice-profiles/${profileId}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        throw new Error(data.detail || (fa ? "ویرایش نام پروفایل ناموفق بود." : "Could not rename profile."))
+      }
+
+      setVoiceProfiles((profiles) =>
+        profiles.map((profile) =>
+          profile.id === profileId ? { ...profile, name } : profile,
+        ),
+      )
+      setEditingProfileId(null)
+      setEditingProfileName("")
+    } catch (error) {
+      setVoiceProfilesError(
+        error instanceof Error ? error.message : "Could not rename profile.",
+      )
+    } finally {
+      setProfileActionId(null)
+    }
+  }
+
+  const handleDeleteVoiceProfile = async (profileId: number) => {
+    const confirmed = window.confirm(
+      fa ? "از حذف این پروفایل صدا مطمئنی؟ این عمل قابل بازگشت نیست." : "Delete this voice profile? This cannot be undone.",
+    )
+    if (!confirmed) return
+
+    const token = localStorage.getItem("access_token")
+    if (!token) {
+      setVoiceProfilesError(fa ? "ابتدا وارد حساب کاربری شو." : "Please log in first.")
+      return
+    }
+
+    setProfileActionId(profileId)
+    setVoiceProfilesError("")
+
+    try {
+      const response = await fetch(`/voice-profiles/${profileId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      })
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        throw new Error(data.detail || (fa ? "حذف پروفایل ناموفق بود." : "Could not delete profile."))
+      }
+
+      setVoiceProfiles((profiles) =>
+        profiles.filter((profile) => profile.id !== profileId),
+      )
+      if (editingProfileId === profileId) {
+        setEditingProfileId(null)
+        setEditingProfileName("")
+      }
+    } catch (error) {
+      setVoiceProfilesError(
+        error instanceof Error ? error.message : "Could not delete profile.",
+      )
+    } finally {
+      setProfileActionId(null)
+    }
+  }
 
   const handleGenerate = async () => {
     const token = localStorage.getItem('access_token')
@@ -265,6 +481,177 @@ function TTSStudio() {
                 ))}
               </select>
             </div>
+            <div className="tts-custom-voices">
+              <div className="tts-custom-voices-info">
+                <strong>{fa ? 'صداهای شخصی من' : 'My custom voices'}</strong>
+                <span>
+                  {voiceProfilesLoading
+                    ? (fa ? 'در حال بارگذاری...' : 'Loading...')
+                    : fa
+                      ? `${voiceProfiles.length} پروفایل ثبت‌شده`
+                      : `${voiceProfiles.length} saved profiles`}
+                </span>
+              </div>
+              <button
+                type="button"
+                className="tts-custom-voices-button"
+                onClick={() => setVoiceProfilesOpen(true)}
+              >
+                {fa ? 'مدیریت پروفایل‌ها' : 'Manage profiles'}
+              </button>
+            </div>
+
+            {voiceProfilesError && (
+              <p className="tts-generation-error" role="alert">
+                {voiceProfilesError}
+              </p>
+            )}
+
+            {voiceProfilesOpen && (
+              <div className="tts-custom-voices-list">
+                <div className="tts-profile-upload-form">
+                  <strong>{fa ? 'ثبت پروفایل صدای جدید' : 'Add a new voice profile'}</strong>
+
+                  <label className="tts-field-label">
+                    {fa ? 'نام پروفایل' : 'Profile name'}
+                  </label>
+                  <input
+                    type="text"
+                    value={newProfileName}
+                    onChange={(event) => setNewProfileName(event.target.value)}
+                    placeholder={fa ? 'مثلاً صدای شخصی من' : 'e.g. My voice'}
+                    maxLength={100}
+                    disabled={profileUploading}
+                  />
+
+                  <label className="tts-field-label">
+                    {fa ? 'فایل صوتی مرجع' : 'Reference audio'}
+                  </label>
+                  <input
+                    type="file"
+                    accept=".wav,.mp3,.m4a,.flac,.ogg,audio/wav,audio/mpeg,audio/mp4,audio/flac,audio/ogg"
+                    onChange={(event) =>
+                      setNewProfileFile(event.target.files?.[0] ?? null)
+                    }
+                    disabled={profileUploading}
+                  />
+
+                  <label className="tts-profile-consent">
+                    <input
+                      type="checkbox"
+                      checked={profileConsent}
+                      onChange={(event) => setProfileConsent(event.target.checked)}
+                      disabled={profileUploading}
+                    />
+                    <span>
+                      {fa
+                        ? 'رضایت صاحب صدا را برای استفاده از این فایل دارم.'
+                        : "I have the voice owner's consent to use this recording."}
+                    </span>
+                  </label>
+
+                  <button
+                    type="button"
+                    className="tts-custom-voices-button"
+                    onClick={handleUploadVoiceProfile}
+                    disabled={
+                      profileUploading ||
+                      !newProfileName.trim() ||
+                      !newProfileFile ||
+                      !profileConsent
+                    }
+                  >
+                    {profileUploading
+                      ? (fa ? 'در حال بارگذاری...' : 'Uploading...')
+                      : (fa ? 'ثبت پروفایل' : 'Save profile')}
+                  </button>
+                </div>
+
+                <div className="tts-profile-list-divider" />
+
+                {voiceProfilesLoading ? (
+                  <p>{fa ? 'در حال بارگذاری پروفایل‌ها...' : 'Loading profiles...'}</p>
+                ) : voiceProfiles.length === 0 ? (
+                  <p>{fa ? 'هنوز پروفایل صدایی ثبت نکرده‌ای.' : 'No custom voice profiles yet.'}</p>
+                ) : (
+                  voiceProfiles.map((profile) => (
+                    <div className="tts-custom-voice-item" key={profile.id}>
+                      {editingProfileId === profile.id ? (
+                        <div className="tts-profile-edit">
+                          <input
+                            type="text"
+                            value={editingProfileName}
+                            onChange={(event) => setEditingProfileName(event.target.value)}
+                            maxLength={100}
+                            autoFocus
+                          />
+                          <div className="tts-profile-actions">
+                            <button
+                              type="button"
+                              className="tts-profile-action-save"
+                              onClick={() => handleRenameVoiceProfile(profile.id)}
+                              disabled={profileActionId === profile.id || !editingProfileName.trim()}
+                            >
+                              {fa ? "ذخیره" : "Save"}
+                            </button>
+                            <button
+                              type="button"
+                              className="tts-profile-action-cancel"
+                              onClick={() => {
+                                setEditingProfileId(null)
+                                setEditingProfileName("")
+                              }}
+                              disabled={profileActionId === profile.id}
+                            >
+                              {fa ? "لغو" : "Cancel"}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="tts-custom-voice-item-info">
+                            <strong>{profile.name}</strong>
+                            <span>{profile.status}</span>
+                          </div>
+                          <div className="tts-profile-actions">
+                            <button
+                              type="button"
+                              className="tts-profile-action-edit"
+                              onClick={() => {
+                                setEditingProfileId(profile.id)
+                                setEditingProfileName(profile.name)
+                                setVoiceProfilesError("")
+                              }}
+                              disabled={profileActionId !== null}
+                            >
+                              {fa ? "ویرایش" : "Rename"}
+                            </button>
+                            <button
+                              type="button"
+                              className="tts-profile-action-delete"
+                              onClick={() => handleDeleteVoiceProfile(profile.id)}
+                              disabled={profileActionId !== null}
+                            >
+                              {profileActionId === profile.id
+                                ? (fa ? "..." : "...")
+                                : (fa ? "حذف" : "Delete")}
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ))
+                )}
+                <button
+                  type="button"
+                  className="tts-retry-button"
+                  onClick={() => setVoiceProfilesOpen(false)}
+                >
+                  {fa ? 'بستن' : 'Close'}
+                </button>
+              </div>
+            )}
+
             {voicesError && (
               <div className="tts-voices-error">
                 <p className="tts-development-note">{voicesError}</p>

@@ -523,3 +523,244 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Custom voice profiles */
+.tts-custom-voices {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 18px;
+  padding: 16px 18px;
+  border: 1px solid var(--tts-line);
+  border-radius: 12px;
+  background: var(--tts-surface);
+}
+
+.tts-custom-voices-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.tts-custom-voices-info strong {
+  color: var(--tts-ink);
+  font-size: 13px;
+}
+
+.tts-custom-voices-info span {
+  color: var(--tts-muted);
+  font-size: 11px;
+}
+
+.tts-custom-voices-button {
+  padding: 9px 14px;
+  border: 1px solid var(--tts-line);
+  border-radius: 8px;
+  background: var(--tts-accent-soft);
+  color: var(--tts-accent);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.tts-custom-voices-button:hover {
+  border-color: var(--tts-accent);
+}
+
+.tts-custom-voices-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 16px;
+  border: 1px solid var(--tts-line);
+  border-radius: 12px;
+  background: var(--tts-bg);
+}
+
+.tts-custom-voices-list > p {
+  margin: 0;
+  color: var(--tts-muted);
+  font-size: 12px;
+}
+
+.tts-custom-voice-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 13px;
+  border: 1px solid var(--tts-line);
+  border-radius: 8px;
+  background: var(--tts-surface);
+}
+
+.tts-custom-voice-item strong {
+  color: var(--tts-ink);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.tts-custom-voice-item span {
+  color: var(--tts-muted);
+  font-size: 10px;
+}
+
+@media (max-width: 420px) {
+  .tts-custom-voices {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .tts-custom-voices-button {
+    width: 100%;
+  }
+}
+
+.tts-profile-upload-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 15px;
+  border: 1px solid var(--tts-line);
+  border-radius: 10px;
+  background: var(--tts-surface);
+}
+
+.tts-profile-upload-form > strong {
+  color: var(--tts-ink);
+  font-size: 13px;
+}
+
+.tts-profile-upload-form > input[type="text"],
+.tts-profile-upload-form > input[type="file"] {
+  width: 100%;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--tts-line);
+  border-radius: 8px;
+  background: var(--tts-bg);
+  color: var(--tts-ink);
+  font: inherit;
+  font-size: 12px;
+}
+
+.tts-profile-upload-form > input[type="file"] {
+  font-size: 11px;
+}
+
+.tts-profile-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  color: var(--tts-muted);
+  font-size: 11px;
+  line-height: 1.8;
+  cursor: pointer;
+}
+
+.tts-profile-consent input {
+  margin-top: 5px;
+  accent-color: var(--tts-accent);
+}
+
+.tts-profile-upload-form .tts-custom-voices-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tts-profile-list-divider {
+  height: 1px;
+  margin: 4px 0;
+  background: var(--tts-line);
+}
+
+/* Custom voice profile actions */
+
+.tts-custom-voice-item-info {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.tts-profile-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.tts-profile-actions button {
+  padding: 7px 10px;
+  border: 1px solid var(--tts-line);
+  border-radius: 7px;
+  background: var(--tts-bg);
+  color: var(--tts-ink);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+}
+
+.tts-profile-actions button:hover:not(:disabled) {
+  border-color: var(--tts-accent);
+  background: var(--tts-accent-soft);
+}
+
+.tts-profile-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tts-profile-actions .tts-profile-action-save {
+  border-color: var(--tts-accent);
+  background: var(--tts-accent);
+  color: white;
+}
+
+.tts-profile-actions .tts-profile-action-delete {
+  color: #d65b5b;
+}
+
+.tts-profile-edit {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.tts-profile-edit input {
+  width: 100%;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid var(--tts-line);
+  border-radius: 7px;
+  background: var(--tts-bg);
+  color: var(--tts-ink);
+  font: inherit;
+  font-size: 12px;
+}
+
+.tts-profile-edit input:focus {
+  outline: 1px solid var(--tts-accent);
+  border-color: var(--tts-accent);
+}
+
+@media (max-width: 420px) {
+  .tts-custom-voice-item {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .tts-profile-actions {
+    width: 100%;
+  }
+}
