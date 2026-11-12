@@ -554,3 +554,37 @@
     display: none;
   }
 }
+
+/* Keep shared header controls stable across themes, languages, and pages. */
+.studio-header .studio-header-control.studio-header-theme-toggle,
+.studio-header .studio-header-control.studio-header-language-toggle {
+  box-sizing: border-box;
+  flex: 0 0 38px;
+  width: 38px;
+  min-width: 38px;
+  max-width: 38px;
+  height: 38px;
+  min-height: 38px;
+  max-height: 38px;
+  padding: 0;
+  gap: 0;
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+.studio-header-theme-toggle > svg { display: block; flex-shrink: 0; }
+.studio-header-theme-toggle.app-tooltip::after,
+.studio-header-language-toggle.app-tooltip::after { top: calc(100% + 8px); bottom: auto; }
+
+.studio-header .studio-header-control.studio-header-language-toggle { display: grid; place-items: center; }
+.studio-header .studio-header-language-label {
+  transform: translateY(2px);
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  font-family: "Vazirmatn", sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0;
+  text-align: center;
+}

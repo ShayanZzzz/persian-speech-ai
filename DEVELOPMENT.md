@@ -1,6 +1,6 @@
 # Development Guide --- Persian Speech AI / Negar
 
-Last updated: 2026-11-07
+Last updated: 2026-11-11
 
 This file is the project handoff document. Update it when architecture,
 implementation status, or important decisions change. Prefer concise,
@@ -118,6 +118,39 @@ The frontend is React-based. Known routes include:
 Known frontend components/files include `TTSStudio.tsx`, `Studio.tsx`,
 `Dashboard`, and the cave-intro landing-page animation. Confirm current
 paths in the repository before editing.
+
+### Unified account history (2026-11-11)
+
+- `GET /history?page=1&page_size=10` returns `items`, `total`, `page`,
+  `pages`, and owner-scoped `languages`. Supported filters: literal filename
+  `search`, `kind` (`all`, `stt`, `tts`, `video`), `language`, inclusive
+  UTC calendar dates `date_from`/`date_to`; `sort`: `newest`, `oldest`,
+  `name_asc`, `name_desc`. No `page` keeps the legacy 50-item array response.
+- `GET /history/{record_id}` fetches an owner-scoped record directly,
+  including records outside the first 50. Public media IDs remain strings.
+- The dashboard uses server pagination for all records, with bilingual
+  compact controls above the table: filename search, icon buttons with native
+  disclosure menus for conversion type, sorting, and page size, plus RTL-aware
+  pagination arrows. Menus close on selection, outside click, blur, or Escape;
+  active choices are marked. A dedicated refresh action re-fetches the current
+  page without resetting filters or selection; clearing filters uses a separate
+  FilterX icon shown only when settings differ from defaults. Date and language
+  filters remain API-only. Dashboard buttons
+  and form controls use the existing Vazirmatn font. Page selection preserves selections across
+  pages and filters for bulk exports; subtitle exports still require timing.
+- New TTS saves input text in `TranscriptionHistory` with `tts:<voice>` mode.
+  Legacy TTS media identified by the generated storage prefix are included
+  once, with `tts-<media_id>` history IDs; their input text was not saved.
+- Video transcription is classified from media MIME type, falling back to
+  filename extension. Signed-in subtitle-video exports save history with
+  `video-export` mode and subtitle text/timing. Guest exports remain available.
+  Rendered MP4 downloads remain temporary; previous exports cannot be recovered.
+- Uses existing tables: no migration or production backfill is required.
+- Validation: nine unittest regressions use disposable SQLite and real ASGI
+  authentication/history requests; inference and FFmpeg are mocked. Frontend
+  TypeScript checks and Vite build pass. Targeted lint passes except for the
+  existing `set-state-in-effect` finding in `VideoEditor.tsx`. No real model
+  inference, PostgreSQL integration, or browser interaction was tested.
 
 ## 5. Completed and verified milestones
 

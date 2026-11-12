@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Moon, Sun } from 'lucide-react'
 import './StudioHeader.css'
 
 type StudioHeaderProps = {
@@ -33,6 +34,9 @@ export default function StudioHeader({
   const location = useLocation()
   const navigate = useNavigate()
   const fa = lang === 'fa'
+  const themeActionLabel = darkMode
+    ? (fa ? 'فعال‌کردن حالت روشن' : 'Switch to light mode')
+    : (fa ? 'فعال‌کردن حالت تاریک' : 'Switch to dark mode')
 
   useEffect(() => {
     let active = true
@@ -165,27 +169,25 @@ export default function StudioHeader({
       <div className="studio-header-actions">
         {onToggleLanguage && (
           <button
-            className="studio-header-control"
+            className="studio-header-control studio-header-language-toggle app-tooltip"
             type="button"
             onClick={onToggleLanguage}
+            aria-label={fa ? 'Switch to English' : 'تغییر زبان به فارسی'}
+            data-tooltip={fa ? 'Switch to English' : 'تغییر زبان به فارسی'}
           >
-            {fa ? 'English' : 'فارسی'}
+            <span className="studio-header-language-label" lang={fa ? 'en' : 'fa'} dir={fa ? 'ltr' : 'rtl'} aria-hidden="true">{fa ? 'En' : 'فا'}</span>
           </button>
         )}
 
         {onToggleTheme && (
           <button
-            className="studio-header-control"
+            className="studio-header-control studio-header-theme-toggle app-tooltip"
             type="button"
             onClick={onToggleTheme}
-            aria-label={
-              darkMode
-                ? (fa ? 'فعال‌کردن حالت روشن' : 'Switch to light mode')
-                : (fa ? 'فعال‌کردن حالت شب' : 'Switch to dark mode')
-            }
+            aria-label={themeActionLabel}
+            data-tooltip={themeActionLabel}
           >
-            {darkMode ? '☀' : '☾'}
-            <span>{darkMode ? (fa ? 'روشن' : 'Light') : (fa ? 'تیره' : 'Dark')}</span>
+            {darkMode ? <Sun size={18} strokeWidth={1.8} aria-hidden="true" /> : <Moon size={18} strokeWidth={1.8} aria-hidden="true" />}
           </button>
         )}
 

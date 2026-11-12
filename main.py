@@ -10,12 +10,15 @@ import shutil
 import subprocess
 import tempfile
 import uuid
+from datetime import date
+from typing import Literal
+from src.history import list_history, get_history_record
 from pathlib import Path
 
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
-from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, Response, UploadFile
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, Request, Response, UploadFile
 from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -448,30 +451,28 @@ def get_me(current_user=Depends(require_current_user)):
 def get_history(
     current_user=Depends(require_current_user),
     db: Session = Depends(get_db),
+    page: int | None = Query(None, ge=1),
+    page_size: int = Query(10, ge=1, le=100),
+    search: str = Query("", max_length=255),
+    kind: Literal["all", "stt", "tts", "video"] = "all",
+    language: str = Query("", max_length=20),
+    date_from: date | None = None,
+    date_to: date | None = None,
+    sort: Literal["newest", "oldest", "name_asc", "name_desc"] = "newest",
 ):
-    records = (
-        db.query(TranscriptionHistory)
-        .filter(TranscriptionHistory.user_id == current_user.id)
-        .order_by(TranscriptionHistory.id.desc())
-        .limit(50)
-        .all()
-    )
+    if date_from and date_to and date_from > date_to:
+        raise HTTPException(status_code=422, detail="Invalid date range.")
+    return list_history(db, current_user.id, page=page, page_size=page_size,
+                        search=search, kind=kind, language=language,
+                        date_from=date_from, date_to=date_to, sort=sort)
 
-    return [
-        {
-            "id": record.id,
-            "public_id": str(record.media_file.public_id) if record.media_file else None,
-            "filename": record.filename,
-            "language": record.language,
-            "text": record.text,
-            "duration_seconds": record.duration_seconds,
-            "mode": record.mode,
-            "segments": json.loads(record.segments) if record.segments else [],
-            "created_at": record.created_at,
-        }
-        for record in records
-    ]
 
+@app.get("/history/{record_id}")
+def history_detail(record_id: str, current_user=Depends(require_current_user), db: Session = Depends(get_db)):
+    record = get_history_record(db, current_user.id, record_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="History record not found.")
+    return record
 
 
 @app.get("/transcript/{public_id}/{slug}")
@@ -714,6 +715,8 @@ async def export_video(
     file: UploadFile = File(...),
     subtitles_json: str = Form(...),
     style_json: str = Form(...),
+    current_user=Depends(get_optional_current_user),
+    db: Session = Depends(get_db),
 ):
     """Render subtitles permanently into an uploaded video and return an MP4."""
     video_extensions = {".mp4", ".mov", ".mkv", ".webm", ".avi", ".mpeg", ".mpg"}
@@ -941,6 +944,17 @@ async def export_video(
         download_name = Path(file.filename or "video").stem
         import re
         download_name = re.sub(r"[^A-Za-z0-9._-]+", "_", download_name).strip("._") or "video"
+        if current_user is not None:
+            # The rendered MP4 stays temporary; retain the conversion and subtitle text.
+            db.add(TranscriptionHistory(
+                user_id=current_user.id,
+                filename=f"{download_name}-subtitled.mp4",
+                language="und",
+                text="\n".join(str(item.get("text", "")) for item in subtitles),
+                segments=json.dumps(subtitles, ensure_ascii=False),
+                mode="video-export",
+            ))
+            db.commit()
         return FileResponse(
             path=str(output_path),
             media_type="video/mp4",
@@ -952,6 +966,7 @@ async def export_video(
         shutil.rmtree(temp_dir, ignore_errors=True)
         raise
     except Exception as exc:
+        db.rollback()
         shutil.rmtree(temp_dir, ignore_errors=True)
         raise HTTPException(status_code=500, detail="Video export failed.") from exc
     finally:
@@ -1031,6 +1046,12 @@ def generate_tts(
 
     try:
         db.add(media_file)
+        db.flush()
+        db.add(TranscriptionHistory(
+            user_id=current_user.id, media_file_id=media_file.id,
+            filename=media_file.filename, language=payload.language,
+            text=text, mode=f"tts:{payload.voice}",
+        ))
         db.commit()
         db.refresh(media_file)
     except Exception as exc:

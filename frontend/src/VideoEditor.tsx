@@ -290,8 +290,10 @@ export default function VideoEditor() {
         previewVideoHeight,
       }))
 
+      const token = localStorage.getItem('access_token')
       const response = await fetch('/export-video', {
         method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: form,
       })
 

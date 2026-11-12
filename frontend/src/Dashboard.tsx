@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { AudioLines } from 'lucide-react'
 import './Dashboard.css'
 import StudioHeader from './StudioHeader'
+import HistoryControls from './HistoryControls'
 import type { ModelsResponse, SpeechToTextModel } from './config/models'
 
 type HistoryRecord = {
   id: number | string
   filename: string
+  conversion_type?: 'stt' | 'tts' | 'video'
   language?: string | null
   text: string
   created_at?: string
@@ -18,6 +21,14 @@ type HistoryRecord = {
 function Dashboard() {
   const navigate = useNavigate()
     const [history, setHistory] = useState<HistoryRecord[]>([])
+  const [knownRecords, setKnownRecords] = useState<HistoryRecord[]>([])
+  const [historyLoading, setHistoryLoading] = useState(true)
+  const [historyError, setHistoryError] = useState('')
+  const [historyRevision, setHistoryRevision] = useState(0)
+  const [filters, setFilters] = useState({ search: '', kind: 'all', sort: 'newest', page_size: '10' })
+  const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
+  const [pages, setPages] = useState(1)
   const [models, setModels] = useState<SpeechToTextModel[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -52,13 +63,6 @@ useEffect(() => {
     return () => document.removeEventListener('click', handleOutsideClick)
   }, [openMenu])
 
-  useEffect(() => {
-    const currentIds = new Set(history.map((record) => record.id))
-    setSelectedIds((current) => {
-      const next = new Set([...current].filter((id) => currentIds.has(id)))
-      return next.size === current.size ? current : next
-    })
-  }, [history])
 
   useEffect(() => {
     const token = localStorage.getItem('access_token')
@@ -72,12 +76,9 @@ useEffect(() => {
 
     async function loadDashboard() {
       try {
-        const [userResponse, historyResponse] = await Promise.all([
-          fetch('/me', { headers }),
-          fetch('/history', { headers }),
-        ])
+        const userResponse = await fetch('/me', { headers })
 
-        if (userResponse.status === 401 || historyResponse.status === 401) {
+        if (userResponse.status === 401) {
           localStorage.removeItem('access_token')
           navigate('/login', { replace: true })
           return
@@ -86,13 +87,6 @@ useEffect(() => {
         if (!userResponse.ok) {
           throw new Error('account_load_failed')
         }
-
-        if (!historyResponse.ok) {
-          throw new Error('history_load_failed')
-        }
-
-        const historyData = await historyResponse.json()
-        setHistory(Array.isArray(historyData) ? historyData : [])
 
         try {
           const modelsResponse = await fetch('/models')
@@ -121,6 +115,55 @@ useEffect(() => {
 
     void loadDashboard()
   }, [navigate])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    const timer = window.setTimeout(async () => {
+      try {
+        const token = localStorage.getItem('access_token')
+        if (!token) return
+        const params = new URLSearchParams({ ...filters, page: String(page) })
+        for (const [key, value] of [...params]) if (!value) params.delete(key)
+        const response = await fetch(`/history?${params}`, {
+          headers: { Authorization: `Bearer ${token}` }, signal: controller.signal,
+        })
+        if (response.status === 401 || response.status === 403) {
+          localStorage.removeItem('access_token')
+          navigate('/login', { replace: true })
+          return
+        }
+        if (!response.ok) throw new Error('history_load_failed')
+        const data = await response.json()
+        if (controller.signal.aborted) return
+        setHistory(data.items)
+        setKnownRecords(current => [...new Map([...current, ...data.items].map(record => [record.id, record])).values()])
+        setTotal(data.total)
+        setPages(data.pages)
+        setPage(data.page)
+        setHistoryError('')
+      } catch {
+        if (!controller.signal.aborted) setHistoryError('history_load_failed')
+      } finally {
+        if (!controller.signal.aborted) setHistoryLoading(false)
+      }
+    }, 250)
+    return () => { controller.abort(); window.clearTimeout(timer) }
+  }, [filters, page, navigate, historyRevision])
+
+  function updateFilter(key: keyof typeof filters, value: string) {
+    setHistoryLoading(true)
+    setOpenMenu(null)
+    setFilenameTooltip(null)
+    setPage(1)
+    setFilters(current => ({ ...current, [key]: value }))
+  }
+
+  function changePage(next: number) {
+    setHistoryLoading(true)
+    setOpenMenu(null)
+    setFilenameTooltip(null)
+    setPage(next)
+  }
 
 function formatDate(value?: string) {
     if (!value) return '—'
@@ -214,15 +257,19 @@ function formatDate(value?: string) {
   }
 
   function toggleSelectAll() {
-    setSelectedIds((current) =>
-      history.length > 0 && current.size === history.length
-        ? new Set()
-        : new Set(history.map((record) => record.id))
-    )
+    setSelectedIds(current => {
+      const next = new Set(current)
+      const allSelected = history.every(record => current.has(record.id))
+      for (const record of history) {
+        if (allSelected) next.delete(record.id)
+        else next.add(record.id)
+      }
+      return next
+    })
   }
 
   function exportSelected(format: 'txt' | 'json' | 'srt' | 'vtt') {
-    const records = history.filter((record) => selectedIds.has(record.id))
+    const records = knownRecords.filter((record) => selectedIds.has(record.id))
     if (!records.length) return
 
     if ((format === 'srt' || format === 'vtt') &&
@@ -303,7 +350,8 @@ function formatDate(value?: string) {
           <h1>{fa ? 'سلام، خوش برگشتی.' : 'Welcome back.'}</h1>
           <p>{fa ? 'تبدیل‌ها و متن‌های ذخیره‌شده‌ات را از اینجا مدیریت کن.' : 'Manage your transcriptions and saved files in one place.'}</p>
           <Link className="dashboard-primary" to="/studio/negar">
-            {fa ? 'شروع تبدیل جدید' : 'New transcription'} <span>↗</span>
+            <span className="dashboard-primary-icon" aria-hidden="true"><AudioLines size={18} strokeWidth={1.8} /></span>
+            {fa ? 'شروع تبدیل جدید' : 'New transcription'}
           </Link>
         </div>
 
@@ -311,31 +359,39 @@ function formatDate(value?: string) {
           <div className="dashboard-section-heading">
             <div>
               <span className="dashboard-eyebrow">{fa ? "فایل‌های شما" : "YOUR FILES"}</span>
-              <h2>{fa ? 'تاریخچهٔ تبدیل‌ها' : 'Transcription history'}</h2>
+              <h2>{fa ? 'تاریخچهٔ تبدیل‌ها' : 'Conversion history'}</h2>
             </div>
-            <span className="dashboard-count">{history.length} {fa ? 'مورد' : history.length === 1 ? 'file' : 'files'}</span>
+            <span className="dashboard-count">{total} {fa ? 'مورد' : total === 1 ? 'file' : 'files'}</span>
           </div>
 
-          {loading ? (
-            <div className="dashboard-empty">{fa ? 'در حال دریافت اطلاعات حساب…' : 'Loading your account…'}</div>
-          ) : error ? (
-            <div className="dashboard-empty dashboard-error">
-              {fa ? ({ account_load_failed: 'دریافت مشخصات حساب ناموفق بود.', history_load_failed: 'دریافت تاریخچه ناموفق بود.', server_connection_failed: 'خطا در ارتباط با سرور.' } as Record<string, string>)[error] || error : ({ account_load_failed: 'Could not load account details.', history_load_failed: 'Could not load transcription history.', server_connection_failed: 'Could not connect to the server.' } as Record<string, string>)[error] || error}
-              <button onClick={() => window.location.reload()}>{fa ? 'تلاش دوباره' : 'Try again'}</button>
-            </div>
-          ) : history.length === 0 ? (
-            <div className="dashboard-empty">
-              <span className="dashboard-empty-icon">↗</span>
-              <h3>{fa ? 'هنوز تبدیلی ثبت نشده' : 'No transcriptions yet'}</h3>
-              <p>{fa ? 'بعد از اولین تبدیل، تاریخچهٔ فایل‌هایت را اینجا می‌بینی.' : 'Your saved transcriptions will appear here after your first upload.'}</p>
-              <Link to="/studio/negar">{fa ? 'تبدیل اولین فایل' : 'Transcribe your first file'}</Link>
-            </div>
-          ) : (
-            <>
+          <HistoryControls
+            fa={fa}
+            filters={filters}
+            page={page}
+            pages={pages}
+            loading={loading || historyLoading}
+            onFilter={updateFilter}
+            onPage={changePage}
+            onRefresh={() => {
+              setHistoryLoading(true)
+              setOpenMenu(null)
+              setFilenameTooltip(null)
+              setHistoryRevision(current => current + 1)
+            }}
+            onReset={() => {
+              setHistoryLoading(true)
+              setOpenMenu(null)
+              setFilenameTooltip(null)
+              setPage(1)
+              setFilters({ search: '', kind: 'all', sort: 'newest', page_size: '10' })
+            }}
+          />
+
               {selectedIds.size > 0 && (
                 <div className="dashboard-bulk-toolbar">
                   <div className="dashboard-bulk-selection">
                     <span>{selectedIds.size} {fa ? 'مورد انتخاب شده' : 'selected'}</span>
+                    <button type="button" onClick={() => setSelectedIds(new Set())}>{fa ? 'لغو همهٔ انتخاب‌ها' : 'Clear selection'}</button>
 
                   </div>
                   <div className="dashboard-bulk-actions">
@@ -363,6 +419,23 @@ function formatDate(value?: string) {
                   </div>
                 </div>
               )}
+
+          {loading || historyLoading ? (
+            <div className="dashboard-empty">{fa ? 'در حال دریافت اطلاعات حساب…' : 'Loading your account…'}</div>
+          ) : error || historyError ? (
+            <div className="dashboard-empty dashboard-error">
+              {fa ? ({ account_load_failed: 'دریافت مشخصات حساب ناموفق بود.', history_load_failed: 'دریافت تاریخچه ناموفق بود.', server_connection_failed: 'خطا در ارتباط با سرور.' } as Record<string, string>)[error || historyError] || error || historyError : ({ account_load_failed: 'Could not load account details.', history_load_failed: 'Could not load transcription history.', server_connection_failed: 'Could not connect to the server.' } as Record<string, string>)[error || historyError] || error || historyError}
+              <button onClick={() => window.location.reload()}>{fa ? 'تلاش دوباره' : 'Try again'}</button>
+            </div>
+          ) : history.length === 0 ? (
+            <div className="dashboard-empty">
+              <span className="dashboard-empty-icon">↗</span>
+              <h3>{fa ? 'موردی پیدا نشد' : 'No results found'}</h3>
+              <p>{fa ? 'فیلترها را تغییر بده یا تبدیل جدیدی انجام بده.' : 'Change your filters or create a new conversion.'}</p>
+              <Link to="/studio/negar">{fa ? 'تبدیل اولین فایل' : 'Transcribe your first file'}</Link>
+            </div>
+          ) : (
+            <>
               <div className="dashboard-table-wrap">
               <table className="dashboard-table">
                 <thead>
@@ -370,11 +443,11 @@ function formatDate(value?: string) {
                     <th>
                       <button
                         type="button"
-                        className={`dashboard-select-record${history.length > 0 && selectedIds.size === history.length ? ' is-selected' : ''}`}
+                        className={`dashboard-select-record${history.length > 0 && history.every(record => selectedIds.has(record.id)) ? ' is-selected' : ''}`}
                         onClick={toggleSelectAll}
-                        title={history.length > 0 && selectedIds.size === history.length ? (fa ? 'لغو انتخاب همه' : 'Deselect all') : (fa ? 'انتخاب همه' : 'Select all')}
-                        aria-label={history.length > 0 && selectedIds.size === history.length ? (fa ? 'لغو انتخاب همه' : 'Deselect all') : (fa ? 'انتخاب همه' : 'Select all')}
-                        aria-pressed={history.length > 0 && selectedIds.size === history.length}
+                        title={history.length > 0 && history.every(record => selectedIds.has(record.id)) ? (fa ? 'لغو انتخاب این صفحه' : 'Deselect this page') : (fa ? 'انتخاب این صفحه' : 'Select this page')}
+                        aria-label={history.length > 0 && history.every(record => selectedIds.has(record.id)) ? (fa ? 'لغو انتخاب این صفحه' : 'Deselect this page') : (fa ? 'انتخاب این صفحه' : 'Select this page')}
+                        aria-pressed={history.length > 0 && history.every(record => selectedIds.has(record.id))}
                       >
                         <svg viewBox="0 0 24 24" aria-hidden="true">
                           <path d="m5 12.5 4.2 4.2L19 7" />
@@ -464,7 +537,9 @@ function formatDate(value?: string) {
                       <td data-label={fa ? "تاریخ بارگذاری" : "Uploaded"}>{formatDate(record.created_at)}</td>
                       <td data-label={fa ? "مدت فایل" : "Duration"}>{formatDuration(record.duration_seconds)}</td>
                       <td data-label={fa ? "مدل" : "Model"}>
-                        {(() => {
+                        <span className="dashboard-conversion-type">{record.conversion_type === 'tts' ? 'TTS' : record.conversion_type === 'video' ? (fa ? 'ویدیو' : 'Video') : 'STT'}{record.mode === 'video-export' ? (fa ? ' · خروجی زیرنویس' : ' · Subtitle export') : ''}</span>
+                        {record.mode?.startsWith('tts:') && <span>{record.mode === 'tts:legacy' ? 'Pocket TTS' : record.mode.slice(4)}</span>}
+                        {record.conversion_type !== 'tts' && record.mode !== 'video-export' && (() => {
                           const modelId = record.mode?.startsWith('whisper-')
                             ? record.mode.slice('whisper-'.length)
                             : record.mode
@@ -488,7 +563,7 @@ function formatDate(value?: string) {
                       </td>
                       <td data-label={fa ? "وضعیت" : "Status"}>
                         <span className="dashboard-success">
-                          <span aria-hidden="true">✓</span> موفق
+                          <span aria-hidden="true">✓</span> {fa ? 'موفق' : 'Success'}
                         </span>
                       </td>
                       <td data-label={fa ? "عملیات" : "Actions"} className="dashboard-actions-cell">
@@ -556,12 +631,12 @@ function formatDate(value?: string) {
               <button type="button" onClick={() => exportSelected('json')}>JSON <span>{fa ? 'اطلاعات ساختاریافته' : 'Structured data'}</span></button>
               <button
                 type="button"
-                disabled={history.filter((record) => selectedIds.has(record.id)).some((record) => !record.segments?.length)}
+                disabled={knownRecords.filter((record) => selectedIds.has(record.id)).some((record) => !record.segments?.length)}
                 onClick={() => exportSelected('srt')}
               >SRT <span>{fa ? 'زیرنویس' : 'Subtitles'}</span></button>
               <button
                 type="button"
-                disabled={history.filter((record) => selectedIds.has(record.id)).some((record) => !record.segments?.length)}
+                disabled={knownRecords.filter((record) => selectedIds.has(record.id)).some((record) => !record.segments?.length)}
                 onClick={() => exportSelected('vtt')}
               >VTT <span>{fa ? 'زیرنویس وب' : 'Web subtitles'}</span></button>
             </div>

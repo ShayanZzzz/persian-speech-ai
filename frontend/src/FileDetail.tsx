@@ -64,7 +64,7 @@ export default function FileDetail() {
       }
 
       try {
-        const response = await fetch('/history', {
+        const response = await fetch(`/history/${encodeURIComponent(id || '')}`, {
           headers: { Authorization: `Bearer ${token}` },
         })
 
@@ -76,9 +76,7 @@ export default function FileDetail() {
 
         if (!response.ok) throw new Error('بارگذاری تاریخچه ناموفق بود.')
 
-        const data: unknown = await response.json()
-        const records = Array.isArray(data) ? (data as HistoryRecord[]) : []
-        const found = records.find((item) => String(item.id) === id)
+        const found: HistoryRecord = await response.json()
 
         if (!cancelled) {
           if (found) setRecord(found)
@@ -224,8 +222,8 @@ export default function FileDetail() {
               <div className="file-detail-transcript-heading">
                 <div>
                   <span className="file-detail-section-kicker">TRANSCRIPTION</span>
-                  <h2>متن پیاده‌سازی‌شده</h2>
-                  <p>متن کامل خروجی تبدیل گفتار به نوشتار</p>
+                  <h2>متن تبدیل</h2>
+                  <p>متن ذخیره‌شده برای این تبدیل</p>
                 </div>
                 <button
                   className="file-detail-copy-button"
@@ -239,7 +237,7 @@ export default function FileDetail() {
               </div>
 
               <div className="file-detail-transcript-body">
-                {record.text?.trim() || 'متنی برای این فایل ثبت نشده است.'}
+                {record.text?.trim() || (record.mode === 'tts:legacy' ? 'متن ورودی این تبدیل قدیمی ذخیره نشده است.' : 'متنی برای این فایل ثبت نشده است.')}
               </div>
 
               <div className="file-detail-transcript-footer">
