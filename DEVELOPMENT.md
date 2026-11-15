@@ -130,7 +130,7 @@ paths in the repository before editing.
   including records outside the first 50. Public media IDs remain strings.
 - The dashboard uses server pagination for all records, with bilingual
   compact controls above the table: filename search, icon buttons with native
-  disclosure menus for conversion type, sorting, and page size, plus RTL-aware
+  disclosure menus for sorting and page size, plus service tabs and RTL-aware
   pagination arrows. Menus close on selection, outside click, blur, or Escape;
   active choices are marked. A dedicated refresh action re-fetches the current
   page without resetting filters or selection; clearing filters uses a separate
@@ -138,7 +138,7 @@ paths in the repository before editing.
   filters remain API-only. Dashboard buttons
   and form controls use the existing Vazirmatn font. Page selection preserves selections across
   pages and filters for bulk exports; subtitle exports still require timing.
-- History services are selected through All / STT / TTS / Video tabs using
+- History services are selected through All / STT / Video / TTS tabs using
   the existing `kind` API filter. Switching services resets the page and
   bulk selection, while preserving search, sort, and page size. Resetting
   controls preserves the active service. Keyboard tabs support arrows,
@@ -155,11 +155,13 @@ paths in the repository before editing.
   `video-export` mode and subtitle text/timing. Guest exports remain available.
   Rendered MP4 downloads remain temporary; previous exports cannot be recovered.
 - Uses existing tables: no migration or production backfill is required.
-- Validation: nine unittest regressions use disposable SQLite and real ASGI
-  authentication/history requests; inference and FFmpeg are mocked. Frontend
-  TypeScript checks and Vite build pass. Targeted lint passes except for the
-  existing `set-state-in-effect` finding in `VideoEditor.tsx`. No real model
-  inference, PostgreSQL integration, or browser interaction was tested.
+- Current validation: 12 backend unittest regressions use disposable SQLite
+  and real ASGI authentication/history requests, with inference and FFmpeg mocked.
+  Six palette regressions, TypeScript, targeted lint, and the frontend build pass.
+  Safari checks against the local running app confirmed sort order, page size,
+  page-count updates, and a new `/history` fetch on refresh. This is not a full
+  browser/mobile matrix, a dedicated PostgreSQL integration suite, or a production
+  deployment test. The existing unrelated VideoEditor lint finding remains.
 
 ### Brand palette foundation (2026-11-13)
 
@@ -174,7 +176,8 @@ paths in the repository before editing.
 - The Shayan Workshop route, semantic status colors, third-party logos,
   and user-selected video/subtitle colors remain separate from branding.
 - Frontend palette regressions: `node --test tests/brand.test.ts` from `frontend`.
-  Browser visual verification is still required when enabling a new palette.
+  Safari dashboard rendering was observed in light mode; full cross-browser,
+  mobile, and dark-mode visual acceptance remains a separate check.
 
 ### History control interaction fix (2026-11-16)
 
@@ -184,6 +187,16 @@ paths in the repository before editing.
 - Dashboard history requests use `cache: 'no-store'`, including refresh requests.
 - Added real ASGI regressions for all sort orders, page sizes, and fresh reads
   after data changes, using disposable SQLite without real inference.
+
+### Delivered changes and documentation
+
+- Code is committed and pushed to `origin/main`: `b559a05` (unified history;
+  2026-11-12) and `f35fdaf` (service tabs, palettes, Safari fix; 2026-11-16).
+- Delivery record, exact scope, tests, decisions, and remaining limits:
+  [Dashboard delivery record](docs/updates/2026-11-16-negar-dashboard.md).
+- [Negar in Notion](https://app.notion.com/p/412cdb6adfbe810fbc75c39f45eba2b6)
+  tracks the matching project update. No deployment was performed. Blender,
+  workshop images, backups, and unrelated local media were excluded from commits.
 
 ## 5. Completed and verified milestones
 

@@ -20,6 +20,16 @@ For now, most of the experiments are being done in Google Colab. The project wil
 
 Early stage — currently focused on experiments, dataset preparation, and building the first working pipeline.
 
+### Negar application and technical documentation
+
+The repository also contains the Negar application: React/Vite frontend,
+FastAPI backend, STT/TTS, subtitle-video workflows, and authenticated account history.
+
+- [Development and handoff guide](DEVELOPMENT.md)
+- [Dashboard delivery record](docs/updates/2026-11-16-negar-dashboard.md)
+- [Visual identity and central palette settings](docs/brand/IDENTITY.md)
+- [Initial audit (historical baseline)](docs/sprint-1/NEGAR_INITIAL_AUDIT.md)
+
 ### License
 
 MIT

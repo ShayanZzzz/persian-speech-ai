@@ -52,3 +52,15 @@ new components should not copy hex codes from individual pages.
 
 Preserve semantic success/error/warning colors, user-selected subtitle colors,
 third-party logos, and the separate Shayan Workshop landing page at `/`.
+
+## Delivery evidence
+
+Central palette configuration and the dashboard's amber activation are included
+in [commit f35fdaf](https://github.com/ShayanZzzz/persian-speech-ai/commit/f35fdaf).
+The six palette regressions check saved identities, global/page-specific selection,
+CSS role coverage, and core text/action contrast in both modes. Safari dashboard
+rendering was observed in light mode; this does not replace full visual acceptance
+on every page, browser, device, and theme.
+
+See [the delivery record](../updates/2026-11-16-negar-dashboard.md) for the complete
+scope, validation, and remaining limitations.
