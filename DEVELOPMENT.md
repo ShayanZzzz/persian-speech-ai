@@ -1,6 +1,6 @@
 # Development Guide --- Persian Speech AI / Negar
 
-Last updated: 2026-11-11
+Last updated: 2026-11-16
 
 This file is the project handoff document. Update it when architecture,
 implementation status, or important decisions change. Prefer concise,
@@ -138,6 +138,15 @@ paths in the repository before editing.
   filters remain API-only. Dashboard buttons
   and form controls use the existing Vazirmatn font. Page selection preserves selections across
   pages and filters for bulk exports; subtitle exports still require timing.
+- History services are selected through All / STT / TTS / Video tabs using
+  the existing `kind` API filter. Switching services resets the page and
+  bulk selection, while preserving search, sort, and page size. Resetting
+  controls preserves the active service. Keyboard tabs support arrows,
+  Home, and End in either language direction.
+- TTS shows the saved voice name and authenticated audio playback through
+  the existing shared player; legacy voice names remain unknown. STT shows
+  duration and model; Video distinguishes transcription from subtitle export.
+  The All tab preserves the combined history and exports.
 - New TTS saves input text in `TranscriptionHistory` with `tts:<voice>` mode.
   Legacy TTS media identified by the generated storage prefix are included
   once, with `tts-<media_id>` history IDs; their input text was not saved.
@@ -151,6 +160,30 @@ paths in the repository before editing.
   TypeScript checks and Vite build pass. Targeted lint passes except for the
   existing `set-state-in-effect` finding in `VideoEditor.tsx`. No real model
   inference, PostgreSQL integration, or browser interaction was tested.
+
+### Brand palette foundation (2026-11-13)
+
+- Approved new identity: **Warm Amber**, documented in `docs/brand/IDENTITY.md`.
+  70% `#FAF7F0`, 20% `#2D302B`, 10% `#C97B24`; accessible tonal variants
+  are defined centrally in `frontend/src/config/brand.ts`.
+- `paletteSettings.defaultPalette` switches all Negar routes; `pages` supports
+  page-by-page adoption. The active default is still `classic-purple`;
+  the dashboard explicitly uses `warm-amber`. Previous `deep-teal` is retained.
+- Negar pages, shared header, tooltips, and audio player consume common
+  `--brand-*` roles. Existing CSS literals remain exact classic fallbacks.
+- The Shayan Workshop route, semantic status colors, third-party logos,
+  and user-selected video/subtitle colors remain separate from branding.
+- Frontend palette regressions: `node --test tests/brand.test.ts` from `frontend`.
+  Browser visual verification is still required when enabling a new palette.
+
+### History control interaction fix (2026-11-16)
+
+- Safari menu selection could close a disclosure on blur with a null related
+  target before the option's click handler ran. Ignore unknown blur destinations;
+  outside pointer clicks, known focus changes, Escape, and selection still dismiss.
+- Dashboard history requests use `cache: 'no-store'`, including refresh requests.
+- Added real ASGI regressions for all sort orders, page sizes, and fresh reads
+  after data changes, using disposable SQLite without real inference.
 
 ## 5. Completed and verified milestones
 

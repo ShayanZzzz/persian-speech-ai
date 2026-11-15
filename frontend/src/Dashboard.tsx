@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { AudioLines } from 'lucide-react'
+import { AudioLines, Film, Layers3, Play, Volume2 } from 'lucide-react'
+import { useAudioPlayer } from './AudioPlayer'
 import './Dashboard.css'
 import StudioHeader from './StudioHeader'
 import HistoryControls from './HistoryControls'
@@ -9,6 +10,7 @@ import type { ModelsResponse, SpeechToTextModel } from './config/models'
 type HistoryRecord = {
   id: number | string
   filename: string
+  public_id?: string | null
   conversion_type?: 'stt' | 'tts' | 'video'
   language?: string | null
   text: string
@@ -20,6 +22,7 @@ type HistoryRecord = {
 
 function Dashboard() {
   const navigate = useNavigate()
+  const { playSavedAudio } = useAudioPlayer()
     const [history, setHistory] = useState<HistoryRecord[]>([])
   const [knownRecords, setKnownRecords] = useState<HistoryRecord[]>([])
   const [historyLoading, setHistoryLoading] = useState(true)
@@ -126,6 +129,7 @@ useEffect(() => {
         for (const [key, value] of [...params]) if (!value) params.delete(key)
         const response = await fetch(`/history?${params}`, {
           headers: { Authorization: `Bearer ${token}` }, signal: controller.signal,
+          cache: 'no-store',
         })
         if (response.status === 401 || response.status === 403) {
           localStorage.removeItem('access_token')
@@ -163,6 +167,14 @@ useEffect(() => {
     setOpenMenu(null)
     setFilenameTooltip(null)
     setPage(next)
+  }
+
+  function switchService(kind: string) {
+    if (kind === filters.kind) return
+    setSelectedIds(new Set())
+    setKnownRecords([])
+    setBulkExportOpen(false)
+    updateFilter('kind', kind)
   }
 
 function formatDate(value?: string) {
@@ -334,6 +346,18 @@ function formatDate(value?: string) {
     localStorage.setItem('negar-theme', next ? 'dark' : 'light')
   }
 
+  const serviceTabs = [
+    { kind: 'all', label: fa ? 'همه' : 'All', icon: Layers3 },
+    { kind: 'stt', label: fa ? 'گفتار به متن' : 'Speech to text', icon: AudioLines },
+    { kind: 'video', label: fa ? 'ویدیو' : 'Video', icon: Film },
+    { kind: 'tts', label: fa ? 'متن به گفتار' : 'Text to speech', icon: Volume2 },
+  ]
+  const newConversionPath = filters.kind === 'tts' ? '/studio/tts' : filters.kind === 'video' ? '/studio/video' : '/studio/stt'
+  const modelColumnLabel = filters.kind === 'tts' ? (fa ? 'صدا' : 'Voice')
+    : filters.kind === 'stt' ? (fa ? 'مدل' : 'Model')
+    : filters.kind === 'video' ? (fa ? 'عملیات / مدل' : 'Operation / model')
+    : (fa ? 'نوع / مدل' : 'Type / model')
+
   return (
     <main className={`dashboard-page ${darkMode ? "dashboard-dark" : ""}`} dir={fa ? "rtl" : "ltr"}>
       <StudioHeader
@@ -349,9 +373,9 @@ function formatDate(value?: string) {
           <span className="dashboard-eyebrow">{fa ? "فضای کار شخصی" : "PERSONAL WORKSPACE"}</span>
           <h1>{fa ? 'سلام، خوش برگشتی.' : 'Welcome back.'}</h1>
           <p>{fa ? 'تبدیل‌ها و متن‌های ذخیره‌شده‌ات را از اینجا مدیریت کن.' : 'Manage your transcriptions and saved files in one place.'}</p>
-          <Link className="dashboard-primary" to="/studio/negar">
+          <Link className="dashboard-primary" to={newConversionPath}>
             <span className="dashboard-primary-icon" aria-hidden="true"><AudioLines size={18} strokeWidth={1.8} /></span>
-            {fa ? 'شروع تبدیل جدید' : 'New transcription'}
+            {fa ? 'شروع تبدیل جدید' : 'New conversion'}
           </Link>
         </div>
 
@@ -362,6 +386,27 @@ function formatDate(value?: string) {
               <h2>{fa ? 'تاریخچهٔ تبدیل‌ها' : 'Conversion history'}</h2>
             </div>
             <span className="dashboard-count">{total} {fa ? 'مورد' : total === 1 ? 'file' : 'files'}</span>
+          </div>
+
+          <div className="dashboard-service-tabs" role="tablist" aria-label={fa ? 'سرویس‌های تاریخچه' : 'History services'} onKeyDown={event => {
+            if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
+            const tabs = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]')]
+            const current = tabs.indexOf(event.target as HTMLButtonElement)
+            if (current < 0) return
+            event.preventDefault()
+            const step = event.key === (fa ? 'ArrowLeft' : 'ArrowRight') ? 1 : -1
+            const index = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1
+              : (current + step + tabs.length) % tabs.length
+            tabs[index].focus()
+            switchService(serviceTabs[index].kind)
+          }}>
+            {serviceTabs.map(({ kind, label, icon: Icon }) => (
+              <button key={kind} id={`history-tab-${kind}`} type="button" role="tab"
+                aria-selected={filters.kind === kind} aria-controls="history-service-panel"
+                tabIndex={filters.kind === kind ? 0 : -1} onClick={() => switchService(kind)}>
+                <Icon size={16} aria-hidden="true" /><span>{label}</span>
+              </button>
+            ))}
           </div>
 
           <HistoryControls
@@ -383,10 +428,11 @@ function formatDate(value?: string) {
               setOpenMenu(null)
               setFilenameTooltip(null)
               setPage(1)
-              setFilters({ search: '', kind: 'all', sort: 'newest', page_size: '10' })
+              setFilters(current => ({ ...current, search: '', sort: 'newest', page_size: '10' }))
             }}
           />
 
+          <div id="history-service-panel" role="tabpanel" aria-labelledby={`history-tab-${filters.kind}`} aria-busy={loading || historyLoading} tabIndex={0}>
               {selectedIds.size > 0 && (
                 <div className="dashboard-bulk-toolbar">
                   <div className="dashboard-bulk-selection">
@@ -432,7 +478,7 @@ function formatDate(value?: string) {
               <span className="dashboard-empty-icon">↗</span>
               <h3>{fa ? 'موردی پیدا نشد' : 'No results found'}</h3>
               <p>{fa ? 'فیلترها را تغییر بده یا تبدیل جدیدی انجام بده.' : 'Change your filters or create a new conversion.'}</p>
-              <Link to="/studio/negar">{fa ? 'تبدیل اولین فایل' : 'Transcribe your first file'}</Link>
+              <Link to={newConversionPath}>{fa ? 'شروع تبدیل جدید' : 'New conversion'}</Link>
             </div>
           ) : (
             <>
@@ -455,9 +501,10 @@ function formatDate(value?: string) {
                       </button>
                       <span className="dashboard-file-column-label">{fa ? 'نام فایل' : 'File name'}</span>
                     </th>
-                    <th>{fa ? 'تاریخ بارگذاری' : 'Uploaded'}</th>
-                    <th>{fa ? 'مدت فایل' : 'Duration'}</th>
-                    <th>{fa ? 'مدل' : 'Model'}</th>
+                    <th>{fa ? 'تاریخ تبدیل' : 'Converted'}</th>
+                    {filters.kind !== 'tts' && <th>{fa ? 'مدت فایل' : 'Duration'}</th>}
+                    <th>{modelColumnLabel}</th>
+                    {filters.kind === 'tts' && <th>{fa ? 'خروجی صوتی' : 'Audio output'}</th>}
                     <th>{fa ? 'وضعیت' : 'Status'}</th>
                     <th aria-label={fa ? "عملیات" : "Actions"}></th>
                   </tr>
@@ -534,11 +581,11 @@ function formatDate(value?: string) {
                           <span>{(record.filename || (fa ? 'فایل بدون نام' : 'Untitled file')).replace(/\.[^.]+$/, '')}</span>
                         </button>
                       </td>
-                      <td data-label={fa ? "تاریخ بارگذاری" : "Uploaded"}>{formatDate(record.created_at)}</td>
-                      <td data-label={fa ? "مدت فایل" : "Duration"}>{formatDuration(record.duration_seconds)}</td>
-                      <td data-label={fa ? "مدل" : "Model"}>
-                        <span className="dashboard-conversion-type">{record.conversion_type === 'tts' ? 'TTS' : record.conversion_type === 'video' ? (fa ? 'ویدیو' : 'Video') : 'STT'}{record.mode === 'video-export' ? (fa ? ' · خروجی زیرنویس' : ' · Subtitle export') : ''}</span>
-                        {record.mode?.startsWith('tts:') && <span>{record.mode === 'tts:legacy' ? 'Pocket TTS' : record.mode.slice(4)}</span>}
+                      <td data-label={fa ? "تاریخ تبدیل" : "Converted"}>{formatDate(record.created_at)}</td>
+                      {filters.kind !== 'tts' && <td data-label={fa ? "مدت فایل" : "Duration"}>{formatDuration(record.duration_seconds)}</td>}
+                      <td data-label={modelColumnLabel}>
+                        {(filters.kind === 'all' || filters.kind === 'video') && <span className="dashboard-conversion-type">{record.conversion_type === 'tts' ? 'TTS' : record.conversion_type === 'video' ? (fa ? 'ویدیو' : 'Video') : 'STT'}{record.mode === 'video-export' ? (fa ? ' · خروجی زیرنویس' : ' · Subtitle export') : record.conversion_type === 'video' ? (fa ? ' · گفتار به متن' : ' · Transcription') : ''}</span>}
+                        {record.conversion_type === 'tts' && <span className="dashboard-voice-name">{record.mode?.startsWith('tts:') && record.mode !== 'tts:legacy' ? record.mode.slice(4) : (fa ? 'نامشخص' : 'Unknown')}</span>}
                         {record.conversion_type !== 'tts' && record.mode !== 'video-export' && (() => {
                           const modelId = record.mode?.startsWith('whisper-')
                             ? record.mode.slice('whisper-'.length)
@@ -561,6 +608,15 @@ function formatDate(value?: string) {
                           )
                         })()}
                       </td>
+                      {filters.kind === 'tts' && <td data-label={fa ? 'خروجی صوتی' : 'Audio output'}>
+                        <button type="button" className="dashboard-history-play app-tooltip"
+                          aria-label={fa ? `پخش ${record.filename}` : `Play ${record.filename}`}
+                          data-tooltip={fa ? 'پخش خروجی صوتی' : 'Play generated audio'}
+                          disabled={!record.public_id}
+                          onClick={event => { event.stopPropagation(); if (record.public_id) void playSavedAudio(record.public_id, record.filename) }}>
+                          <Play size={16} aria-hidden="true" />
+                        </button>
+                      </td>}
                       <td data-label={fa ? "وضعیت" : "Status"}>
                         <span className="dashboard-success">
                           <span aria-hidden="true">✓</span> {fa ? 'موفق' : 'Success'}
@@ -601,6 +657,7 @@ function formatDate(value?: string) {
             </div>
             </>
           )}
+          </div>
         </section>
       </section>
 

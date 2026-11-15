@@ -1,18 +1,18 @@
 .media-studio {
-  --ms-bg: #f5f5f2;
-  --ms-surface: #fff;
-  --ms-surface-soft: #ecece7;
-  --ms-ink: #1b1d19;
-  --ms-muted: #74776d;
-  --ms-line: #dedfd7;
-  --ms-accent: #a78bfa;
-  --ms-accent-hover: #8b5cf6;
-  --ms-accent-soft: #ede9fe;
-  --ms-green: #7c3aed;
+  --ms-bg: var(--brand-bg, #f5f5f2);
+  --ms-surface: var(--brand-surface, #fff);
+  --ms-surface-soft: var(--brand-raised, #ecece7);
+  --ms-ink: var(--brand-ink, #1b1d19);
+  --ms-muted: var(--brand-muted, #74776d);
+  --ms-line: var(--brand-line, #dedfd7);
+  --ms-accent: var(--brand-accent, #a78bfa);
+  --ms-accent-hover: var(--brand-accent-hover, #8b5cf6);
+  --ms-accent-soft: var(--brand-accent-soft, #ede9fe);
+  --ms-green: var(--brand-accent, #7c3aed);
   min-height: 100vh;
   overflow: hidden;
   background:
-    radial-gradient(ellipse at 85% 12%, rgba(139, 92, 246, .16), transparent 32rem),
+    radial-gradient(ellipse at 85% 12%, rgba(var(--brand-accent-decorative-rgb, 139, 92, 246), .16), transparent 32rem),
     var(--ms-bg);
   color: var(--ms-ink);
   font-family: "Vazirmatn", sans-serif;
@@ -53,18 +53,18 @@
 }
 
 .media-studio.ms-dark {
-  --ms-bg: #171225;
-  --ms-surface: #211a32;
-  --ms-surface-soft: #2d2343;
-  --ms-ink: #f1f2eb;
-  --ms-muted: #a1a699;
-  --ms-line: #3b3151;
-  --ms-accent: #a78bfa;
-  --ms-accent-hover: #c4b5fd;
-  --ms-accent-soft: #34264f;
-  --ms-green: #a78bfa;
+  --ms-bg: var(--brand-bg, #171225);
+  --ms-surface: var(--brand-surface, #211a32);
+  --ms-surface-soft: var(--brand-raised, #2d2343);
+  --ms-ink: var(--brand-ink, #f1f2eb);
+  --ms-muted: var(--brand-muted, #a1a699);
+  --ms-line: var(--brand-line, #3b3151);
+  --ms-accent: var(--brand-accent, #a78bfa);
+  --ms-accent-hover: var(--brand-accent-hover, #c4b5fd);
+  --ms-accent-soft: var(--brand-accent-soft, #34264f);
+  --ms-green: var(--brand-accent, #a78bfa);
   background:
-    radial-gradient(ellipse at 85% 12%, rgba(167, 139, 250, .13), transparent 32rem),
+    radial-gradient(ellipse at 85% 12%, rgba(var(--brand-accent-decorative-rgb, 167, 139, 250), .13), transparent 32rem),
     var(--ms-bg);
 }
 
@@ -115,8 +115,8 @@
   height: 8px;
   flex: 0 0 auto;
   border-radius: 50%;
-  background: #8b5cf6;
-  box-shadow: 0 0 0 4px rgba(139, 92, 246, .15);
+  background: var(--brand-accent, #8b5cf6);
+  box-shadow: 0 0 0 4px rgba(var(--brand-accent-decorative-rgb, 139, 92, 246), .15);
 }
 
 .ms-hero h1 {
@@ -482,13 +482,13 @@ a.ms-tool-card:hover {
 
 .ms-preview-transcription {
   background:
-    radial-gradient(ellipse at 25% 25%, rgba(139, 92, 246, .22), transparent 65%),
+    radial-gradient(ellipse at 25% 25%, rgba(var(--brand-accent-decorative-rgb, 139, 92, 246), .22), transparent 65%),
     var(--ms-surface-soft);
 }
 
 .ms-preview-subtitles {
   background:
-    radial-gradient(ellipse at 75% 25%, rgba(125, 126, 193, .23), transparent 65%),
+    radial-gradient(ellipse at 75% 25%, rgba(var(--brand-accent-decorative-rgb, 125, 126, 193), .23), transparent 65%),
     var(--ms-surface-soft);
 }
 
@@ -1063,7 +1063,7 @@ a.ms-tool-card:hover {
 }
 
 .ms-article-art-2 {
-  background: linear-gradient(135deg, #e4e1f1, #d4d7df);
+  background: linear-gradient(135deg, var(--brand-accent-soft, #e4e1f1), #d4d7df);
 }
 
 .ms-article-art-3 {
@@ -1075,7 +1075,7 @@ a.ms-tool-card:hover {
 }
 
 .ms-dark .ms-article-art-2 {
-  background: linear-gradient(135deg, #343144, #292d37);
+  background: linear-gradient(135deg, var(--brand-raised, #343144), #292d37);
 }
 
 .ms-dark .ms-article-art-3 {
@@ -1111,7 +1111,7 @@ a.ms-tool-card:hover {
   width: 73%;
   gap: 7px;
   padding: 16px;
-  border: 1px solid rgba(65, 65, 90, .2);
+  border: 1px solid rgba(var(--brand-accent-rgb, 65, 65, 90), .2);
   border-radius: 8px;
   background: rgba(255, 255, 255, .55);
   transform: rotate(-3deg);
@@ -1120,7 +1120,7 @@ a.ms-tool-card:hover {
 .ms-article-art-subtitles i {
   height: 6px;
   border-radius: 4px;
-  background: rgba(65, 65, 90, .15);
+  background: rgba(var(--brand-raised-rgb, 65, 65, 90), .15);
 }
 
 .ms-article-art-subtitles i:nth-child(2) {
@@ -1542,28 +1542,28 @@ a.ms-tool-card:hover {
 
 /* SHAYAN HUB — responsive violet studio redesign */
 .media-studio {
-  --ms-accent: #a78bfa;
-  --ms-accent-hover: #8b5cf6;
-  --ms-accent-soft: #ede9fe;
-  --ms-green: #8b5cf6;
+  --ms-accent: var(--brand-accent, #a78bfa);
+  --ms-accent-hover: var(--brand-accent-hover, #8b5cf6);
+  --ms-accent-soft: var(--brand-accent-soft, #ede9fe);
+  --ms-green: var(--brand-accent, #8b5cf6);
   background:
-    radial-gradient(ellipse at 88% 8%, rgba(139, 92, 246, .13), transparent 34rem),
+    radial-gradient(ellipse at 88% 8%, rgba(var(--brand-accent-decorative-rgb, 139, 92, 246), .13), transparent 34rem),
     var(--ms-bg);
 }
 
 .media-studio.ms-dark {
-  --ms-bg: #171225;
-  --ms-surface: #211a32;
-  --ms-surface-soft: #2d2343;
-  --ms-ink: #f5f1ff;
-  --ms-muted: #b5abc9;
-  --ms-line: #403453;
-  --ms-accent: #b9a2ff;
-  --ms-accent-hover: #d0c2ff;
-  --ms-accent-soft: #34264f;
-  --ms-green: #b9a2ff;
+  --ms-bg: var(--brand-bg, #171225);
+  --ms-surface: var(--brand-surface, #211a32);
+  --ms-surface-soft: var(--brand-raised, #2d2343);
+  --ms-ink: var(--brand-ink, #f5f1ff);
+  --ms-muted: var(--brand-muted, #b5abc9);
+  --ms-line: var(--brand-line, #403453);
+  --ms-accent: var(--brand-accent, #b9a2ff);
+  --ms-accent-hover: var(--brand-accent-hover, #d0c2ff);
+  --ms-accent-soft: var(--brand-accent-soft, #34264f);
+  --ms-green: var(--brand-accent, #b9a2ff);
   background:
-    radial-gradient(ellipse at 88% 8%, rgba(167, 139, 250, .16), transparent 34rem),
+    radial-gradient(ellipse at 88% 8%, rgba(var(--brand-accent-decorative-rgb, 167, 139, 250), .16), transparent 34rem),
     var(--ms-bg);
 }
 
@@ -1647,11 +1647,11 @@ a.ms-tool-card:hover {
 .ms-visual-card {
   width: min(100%, 420px);
   border-radius: 22px;
-  box-shadow: 0 28px 75px rgba(37, 25, 65, .12);
+  box-shadow: 0 28px 75px rgba(var(--brand-surface-rgb, 37, 25, 65), .12);
 }
 
 .ms-visual-card:hover {
-  box-shadow: 0 32px 85px rgba(37, 25, 65, .17);
+  box-shadow: 0 32px 85px rgba(var(--brand-surface-rgb, 37, 25, 65), .17);
 }
 
 .ms-workspace,
@@ -1676,7 +1676,7 @@ a.ms-tool-card:hover {
 
 .ms-tool-card {
   border-radius: 20px;
-  box-shadow: 0 8px 30px rgba(37, 25, 65, .035);
+  box-shadow: 0 8px 30px rgba(var(--brand-surface-rgb, 37, 25, 65), .035);
 }
 
 .ms-tool-card.is-featured {
@@ -1695,19 +1695,19 @@ a.ms-tool-card:hover {
 
 .ms-preview-transcription {
   background:
-    radial-gradient(ellipse at 24% 15%, rgba(167, 139, 250, .32), transparent 65%),
+    radial-gradient(ellipse at 24% 15%, rgba(var(--brand-accent-decorative-rgb, 167, 139, 250), .32), transparent 65%),
     var(--ms-surface-soft);
 }
 
 .ms-preview-subtitles {
   background:
-    radial-gradient(ellipse at 76% 15%, rgba(139, 92, 246, .25), transparent 65%),
+    radial-gradient(ellipse at 76% 15%, rgba(var(--brand-accent-decorative-rgb, 139, 92, 246), .25), transparent 65%),
     var(--ms-surface-soft);
 }
 
 .ms-preview-audio-lab {
   background:
-    radial-gradient(ellipse at 50% 30%, rgba(167, 139, 250, .24), transparent 65%),
+    radial-gradient(ellipse at 50% 30%, rgba(var(--brand-accent-decorative-rgb, 167, 139, 250), .24), transparent 65%),
     var(--ms-surface-soft);
 }
 
@@ -1746,16 +1746,16 @@ a.ms-tool-card:hover {
   border-color: color-mix(in srgb, var(--ms-accent) 35%, var(--ms-line));
   border-radius: 22px;
   background:
-    radial-gradient(ellipse at 85% 20%, rgba(167, 139, 250, .18), transparent 50%),
+    radial-gradient(ellipse at 85% 20%, rgba(var(--brand-accent-decorative-rgb, 167, 139, 250), .18), transparent 50%),
     var(--ms-surface);
 }
 
 .ms-primary-button {
-  color: #211a32 !important;
+  color: var(--brand-on-accent, #211a32) !important;
 }
 
 .ms-primary-button:hover {
-  color: #211a32 !important;
+  color: var(--brand-on-accent, #211a32) !important;
 }
 
 @media (max-width: 900px) {
@@ -1982,7 +1982,7 @@ a.ms-tool-card:hover {
   border: 1px solid var(--ms-line);
   border-radius: 20px;
   background: var(--ms-surface);
-  box-shadow: 0 12px 32px rgba(30, 20, 55, 0.045);
+  box-shadow: 0 12px 32px rgba(var(--brand-surface-rgb, 30, 20, 55), 0.045);
 }
 
 .media-studio .ms-quick-panel-heading { margin-bottom: 2px; }

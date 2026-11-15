@@ -1,0 +1,59 @@
+/* Palette values come from config/brand.ts; classic leaves CSS fallbacks intact. */
+.negar-palette { display: contents; }
+.negar-palette[data-negar-palette]:not([data-negar-palette="classic-purple"]),
+.negar-palette[data-negar-palette]:not([data-negar-palette="classic-purple"]) :is(.studio-header-light, .file-detail-light, .ve-light) {
+  --brand-bg: var(--palette-light-bg);
+  --brand-bg-rgb: var(--palette-light-bg-rgb);
+  --brand-surface: var(--palette-light-surface);
+  --brand-surface-rgb: var(--palette-light-surface-rgb);
+  --brand-raised: var(--palette-light-raised);
+  --brand-raised-rgb: var(--palette-light-raised-rgb);
+  --brand-ink: var(--palette-light-ink);
+  --brand-ink-rgb: var(--palette-light-ink-rgb);
+  --brand-muted: var(--palette-light-muted);
+  --brand-muted-rgb: var(--palette-light-muted-rgb);
+  --brand-line: var(--palette-light-line);
+  --brand-line-rgb: var(--palette-light-line-rgb);
+  --brand-accent: var(--palette-light-accent);
+  --brand-accent-rgb: var(--palette-light-accent-rgb);
+  --brand-accent-hover: var(--palette-light-accent-hover);
+  --brand-accent-hover-rgb: var(--palette-light-accent-hover-rgb);
+  --brand-accent-bright: var(--palette-light-accent-bright);
+  --brand-accent-bright-rgb: var(--palette-light-accent-bright-rgb);
+  --brand-accent-soft: var(--palette-light-accent-soft);
+  --brand-accent-soft-rgb: var(--palette-light-accent-soft-rgb);
+  --brand-accent-border: var(--palette-light-accent-border);
+  --brand-accent-border-rgb: var(--palette-light-accent-border-rgb);
+  --brand-accent-decorative: var(--palette-light-accent-decorative);
+  --brand-accent-decorative-rgb: var(--palette-light-accent-decorative-rgb);
+  --brand-on-accent: var(--palette-light-on-accent);
+  --brand-on-accent-rgb: var(--palette-light-on-accent-rgb);
+}
+.negar-palette[data-negar-palette]:not([data-negar-palette="classic-purple"]) :is(.negar-dark, .dashboard-dark, .tts-dark, .ms-dark, .studio-header-dark, .file-detail-dark, .ve-dark, .global-audio-player) {
+  --brand-bg: var(--palette-dark-bg);
+  --brand-bg-rgb: var(--palette-dark-bg-rgb);
+  --brand-surface: var(--palette-dark-surface);
+  --brand-surface-rgb: var(--palette-dark-surface-rgb);
+  --brand-raised: var(--palette-dark-raised);
+  --brand-raised-rgb: var(--palette-dark-raised-rgb);
+  --brand-ink: var(--palette-dark-ink);
+  --brand-ink-rgb: var(--palette-dark-ink-rgb);
+  --brand-muted: var(--palette-dark-muted);
+  --brand-muted-rgb: var(--palette-dark-muted-rgb);
+  --brand-line: var(--palette-dark-line);
+  --brand-line-rgb: var(--palette-dark-line-rgb);
+  --brand-accent: var(--palette-dark-accent);
+  --brand-accent-rgb: var(--palette-dark-accent-rgb);
+  --brand-accent-hover: var(--palette-dark-accent-hover);
+  --brand-accent-hover-rgb: var(--palette-dark-accent-hover-rgb);
+  --brand-accent-bright: var(--palette-dark-accent-bright);
+  --brand-accent-bright-rgb: var(--palette-dark-accent-bright-rgb);
+  --brand-accent-soft: var(--palette-dark-accent-soft);
+  --brand-accent-soft-rgb: var(--palette-dark-accent-soft-rgb);
+  --brand-accent-border: var(--palette-dark-accent-border);
+  --brand-accent-border-rgb: var(--palette-dark-accent-border-rgb);
+  --brand-accent-decorative: var(--palette-dark-accent-decorative);
+  --brand-accent-decorative-rgb: var(--palette-dark-accent-decorative-rgb);
+  --brand-on-accent: var(--palette-dark-on-accent);
+  --brand-on-accent-rgb: var(--palette-dark-on-accent-rgb);
+}

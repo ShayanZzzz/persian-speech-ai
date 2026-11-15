@@ -1,16 +1,16 @@
 .negar-page {
-  --ng-bg: #f6f7f9;
-  --ng-surface: #ffffff;
-  --ng-surface-soft: #f0f2f6;
-  --ng-ink: #202532;
-  --ng-muted: #737b8b;
-  --ng-line: #e2e5eb;
-  --ng-accent: #6158d9;
-  --ng-accent-hover: #5047c7;
-  --ng-accent-soft: #eeedff;
+  --ng-bg: var(--brand-bg, #f6f7f9);
+  --ng-surface: var(--brand-surface, #ffffff);
+  --ng-surface-soft: var(--brand-raised, #f0f2f6);
+  --ng-ink: var(--brand-ink, #202532);
+  --ng-muted: var(--brand-muted, #737b8b);
+  --ng-line: var(--brand-line, #e2e5eb);
+  --ng-accent: var(--brand-accent, #6158d9);
+  --ng-accent-hover: var(--brand-accent-hover, #5047c7);
+  --ng-accent-soft: var(--brand-accent-soft, #eeedff);
   --ng-success: #19856b;
   --ng-danger: #c74646;
-  --ng-shadow: 0 18px 50px rgba(32, 37, 50, 0.055);
+  --ng-shadow: 0 18px 50px rgba(var(--brand-surface-rgb, 32, 37, 50), 0.055);
 
   min-height: 100vh;
   background: var(--ng-bg);
@@ -22,15 +22,15 @@
 }
 
 .negar-page.negar-dark {
-  --ng-bg: #15171d;
-  --ng-surface: #1e212a;
-  --ng-surface-soft: #272b36;
-  --ng-ink: #f0f1f6;
-  --ng-muted: #a0a6b5;
-  --ng-line: #343845;
-  --ng-accent: #a9a2ff;
-  --ng-accent-hover: #beb9ff;
-  --ng-accent-soft: #302d4d;
+  --ng-bg: var(--brand-bg, #15171d);
+  --ng-surface: var(--brand-surface, #1e212a);
+  --ng-surface-soft: var(--brand-raised, #272b36);
+  --ng-ink: var(--brand-ink, #f0f1f6);
+  --ng-muted: var(--brand-muted, #a0a6b5);
+  --ng-line: var(--brand-line, #343845);
+  --ng-accent: var(--brand-accent, #a9a2ff);
+  --ng-accent-hover: var(--brand-accent-hover, #beb9ff);
+  --ng-accent-soft: var(--brand-accent-soft, #302d4d);
   --ng-success: #65d3b2;
   --ng-danger: #ff8989;
   --ng-shadow: 0 18px 50px rgba(0, 0, 0, 0.16);
@@ -335,7 +335,7 @@
   border: 1px solid var(--ng-accent);
   border-radius: 10px;
   background: var(--ng-accent);
-  color: #ffffff;
+  color: var(--brand-on-accent, #ffffff);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
@@ -343,7 +343,7 @@
 }
 
 .negar-dark .negar-primary-button {
-  color: #191824;
+  color: var(--brand-on-accent, #191824);
 }
 
 .negar-primary-button:hover:not(:disabled) {
@@ -377,25 +377,25 @@
 
 
 .negar-primary-button.negar-file-button {
-  background: #287f91;
-  border-color: #287f91;
-  color: #ffffff;
+  background: var(--brand-accent, #287f91);
+  border-color: var(--brand-accent, #287f91);
+  color: var(--brand-on-accent, #ffffff);
 }
 
 .negar-primary-button.negar-file-button:hover:not(:disabled) {
-  background: #216d7d;
-  border-color: #216d7d;
+  background: var(--brand-accent, #216d7d);
+  border-color: var(--brand-accent, #216d7d);
 }
 
 .negar-primary-button.negar-transcribe-button:not(.negar-cancel-button) {
-  background: #b7791f;
-  border-color: #b7791f;
+  background: var(--brand-accent, #b7791f);
+  border-color: var(--brand-accent, #b7791f);
   color: #ffffff;
 }
 
 .negar-primary-button.negar-transcribe-button:not(.negar-cancel-button):hover:not(:disabled) {
-  background: #996515;
-  border-color: #996515;
+  background: var(--brand-accent-hover, #996515);
+  border-color: var(--brand-accent-hover, #996515);
 }
 
 .negar-primary-button.negar-cancel-button {
@@ -1106,15 +1106,15 @@
 
 /* Audio language - refined teal */
 .negar-upload .negar-primary-button.negar-language-button {
-  background: color-mix(in srgb, #287f91 10%, var(--ng-surface));
-  border-color: color-mix(in srgb, #287f91 32%, var(--ng-line));
-  color: #287f91;
+  background: color-mix(in srgb, var(--brand-accent, #287f91) 10%, var(--ng-surface));
+  border-color: color-mix(in srgb, var(--brand-accent, #287f91) 32%, var(--ng-line));
+  color: var(--brand-accent, #287f91);
 }
 
 .negar-language-icon,
 .negar-language-button .negar-model-chevron,
 .negar-language-content bdi {
-  color: #287f91;
+  color: var(--brand-accent, #287f91);
 }
 
 .negar-language-content small {
@@ -1123,57 +1123,57 @@
 
 .negar-upload .negar-primary-button.negar-language-button:hover:not(:disabled),
 .negar-upload .negar-primary-button.negar-language-button.is-open {
-  background: color-mix(in srgb, #287f91 16%, var(--ng-surface));
-  border-color: #287f91;
+  background: color-mix(in srgb, var(--brand-accent, #287f91) 16%, var(--ng-surface));
+  border-color: var(--brand-accent, #287f91);
 }
 
 .negar-dark .negar-upload .negar-primary-button.negar-language-button {
   background: color-mix(in srgb, #55b8c5 13%, var(--ng-surface));
   border-color: color-mix(in srgb, #55b8c5 30%, var(--ng-line));
-  color: #75cbd4;
+  color: var(--brand-accent-bright, #75cbd4);
 }
 
 .negar-dark .negar-language-icon,
 .negar-dark .negar-language-button .negar-model-chevron,
 .negar-dark .negar-language-content bdi {
-  color: #75cbd4;
+  color: var(--brand-accent-bright, #75cbd4);
 }
 
 /* Audio language - violet */
 .negar-upload .negar-primary-button.negar-language-button {
-  background: #f0edff;
-  border-color: #d9d2ff;
-  color: #6654c8;
+  background: var(--brand-accent-soft, #f0edff);
+  border-color: var(--brand-accent-border, #d9d2ff);
+  color: var(--brand-accent, #6654c8);
 }
 
 .negar-language-icon,
 .negar-language-button .negar-model-chevron,
 .negar-language-content bdi {
-  color: #6654c8;
+  color: var(--brand-accent, #6654c8);
 }
 
 .negar-upload .negar-primary-button.negar-language-button:hover:not(:disabled),
 .negar-upload .negar-primary-button.negar-language-button.is-open {
-  background: #e8e2ff;
-  border-color: #a99bea;
+  background: var(--brand-accent-soft, #e8e2ff);
+  border-color: var(--brand-accent-border, #a99bea);
 }
 
 .negar-dark .negar-upload .negar-primary-button.negar-language-button {
-  background: #302b49;
-  border-color: #514775;
-  color: #c0b4ff;
+  background: var(--brand-accent-soft, #302b49);
+  border-color: var(--brand-accent-border, #514775);
+  color: var(--brand-accent-bright, #c0b4ff);
 }
 
 .negar-dark .negar-language-icon,
 .negar-dark .negar-language-button .negar-model-chevron,
 .negar-dark .negar-language-content bdi {
-  color: #c0b4ff;
+  color: var(--brand-accent-bright, #c0b4ff);
 }
 
 .negar-dark .negar-upload .negar-primary-button.negar-language-button:hover:not(:disabled),
 .negar-dark .negar-upload .negar-primary-button.negar-language-button.is-open {
-  background: #393253;
-  border-color: #8b7bd0;
+  background: var(--brand-accent-soft, #393253);
+  border-color: var(--brand-accent-border, #8b7bd0);
 }
 
 
@@ -1186,10 +1186,10 @@
   padding: 0 13px;
   gap: 10px;
   justify-content: flex-start;
-  border: 1px solid #d9d2ff;
+  border: 1px solid var(--brand-accent-border, #d9d2ff);
   border-radius: 10px;
-  background: #f0edff;
-  color: #6654c8;
+  background: var(--brand-accent-soft, #f0edff);
+  color: var(--brand-accent, #6654c8);
   box-shadow: none;
   text-align: start;
 }
@@ -1197,8 +1197,8 @@
 .negar-selector-button:hover:not(:disabled),
 .negar-selector-button.is-open {
   transform: translateY(-1px);
-  background: #e8e2ff !important;
-  border-color: #a99bea !important;
+  background: var(--brand-accent-soft, #e8e2ff) !important;
+  border-color: var(--brand-accent-border, #a99bea) !important;
 }
 
 .negar-model-content {
@@ -1212,7 +1212,7 @@
 }
 
 .negar-model-content small {
-  color: #8275bd;
+  color: var(--brand-accent, #8275bd);
   font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -1220,7 +1220,7 @@
 
 .negar-model-content .negar-model-label {
   display: block;
-  color: #5542b3;
+  color: var(--brand-accent, #5542b3);
   font-size: 12px;
   font-weight: 700;
 }
@@ -1233,7 +1233,7 @@
   width: 14px;
   height: 14px;
   flex-basis: 14px;
-  color: #6654c8;
+  color: var(--brand-accent, #6654c8);
 }
 
 .negar-selector-button.is-open .negar-model-chevron {
@@ -1254,68 +1254,68 @@
 
 /* Dark theme */
 .negar-dark .negar-upload .negar-primary-button.negar-selector-button {
-  background: #302b49;
-  border-color: #514775;
-  color: #c0b4ff;
+  background: var(--brand-accent-soft, #302b49);
+  border-color: var(--brand-accent-border, #514775);
+  color: var(--brand-accent-bright, #c0b4ff);
 }
 
 .negar-dark .negar-model-content small {
-  color: #a99bdc;
+  color: var(--brand-accent-border, #a99bdc);
 }
 
 .negar-dark .negar-model-content .negar-model-label,
 .negar-dark .negar-selector-button .negar-model-chevron {
-  color: #c0b4ff;
+  color: var(--brand-accent-bright, #c0b4ff);
 }
 
 .negar-dark .negar-selector-button:hover:not(:disabled),
 .negar-dark .negar-selector-button.is-open {
-  background: #393253 !important;
-  border-color: #8b7bd0 !important;
+  background: var(--brand-accent-soft, #393253) !important;
+  border-color: var(--brand-accent-border, #8b7bd0) !important;
 }
 
 /* Darker violet model selector */
 
 .negar-upload .negar-primary-button.negar-selector-button {
-  background: #e1d9ff;
-  border-color: #b9a9f5;
-  color: #49349f;
+  background: var(--brand-accent-soft, #e1d9ff);
+  border-color: var(--brand-accent-border, #b9a9f5);
+  color: var(--brand-accent, #49349f);
 }
 
 .negar-model-content small {
-  color: #6956b2;
+  color: var(--brand-accent, #6956b2);
 }
 
 .negar-model-content .negar-model-label,
 .negar-selector-button .negar-model-chevron {
-  color: #49349f;
+  color: var(--brand-accent, #49349f);
 }
 
 .negar-selector-button:hover:not(:disabled),
 .negar-selector-button.is-open {
-  background: #d2c6ff !important;
-  border-color: #9882e8 !important;
+  background: var(--brand-accent-soft, #d2c6ff) !important;
+  border-color: var(--brand-accent-border, #9882e8) !important;
 }
 
 .negar-dark .negar-upload .negar-primary-button.negar-selector-button {
-  background: #403568;
-  border-color: #6a579e;
-  color: #d5caff;
+  background: var(--brand-accent-soft, #403568);
+  border-color: var(--brand-accent-border, #6a579e);
+  color: var(--brand-accent-bright, #d5caff);
 }
 
 .negar-dark .negar-model-content small {
-  color: #b7a8e9;
+  color: var(--brand-accent-bright, #b7a8e9);
 }
 
 .negar-dark .negar-model-content .negar-model-label,
 .negar-dark .negar-selector-button .negar-model-chevron {
-  color: #d5caff;
+  color: var(--brand-accent-bright, #d5caff);
 }
 
 .negar-dark .negar-selector-button:hover:not(:disabled),
 .negar-dark .negar-selector-button.is-open {
-  background: #51427f !important;
-  border-color: #9581d4 !important;
+  background: var(--brand-accent-soft, #51427f) !important;
+  border-color: var(--brand-accent-border, #9581d4) !important;
 }
 
 /* Match model selector with the main purple theme */
@@ -1323,7 +1323,7 @@
 .negar-upload .negar-primary-button.negar-selector-button {
   background: var(--ng-accent);
   border-color: var(--ng-accent);
-  color: #ffffff;
+  color: var(--brand-on-accent, #ffffff);
 }
 
 .negar-model-content small {
@@ -1332,7 +1332,7 @@
 
 .negar-model-content .negar-model-label,
 .negar-selector-button .negar-model-chevron {
-  color: #ffffff;
+  color: var(--brand-on-accent, #ffffff);
 }
 
 .negar-selector-button:hover:not(:disabled),
@@ -1344,16 +1344,16 @@
 .negar-dark .negar-upload .negar-primary-button.negar-selector-button {
   background: var(--ng-accent);
   border-color: var(--ng-accent);
-  color: #191824;
+  color: var(--brand-on-accent, #191824);
 }
 
 .negar-dark .negar-model-content small {
-  color: rgba(25, 24, 36, 0.75);
+  color: rgba(var(--brand-surface-rgb, 25, 24, 36), 0.75);
 }
 
 .negar-dark .negar-model-content .negar-model-label,
 .negar-dark .negar-selector-button .negar-model-chevron {
-  color: #191824;
+  color: var(--brand-on-accent, #191824);
 }
 
 .negar-dark .negar-selector-button:hover:not(:disabled),

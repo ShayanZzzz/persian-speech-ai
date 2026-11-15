@@ -126,6 +126,46 @@ class HistoryTests(unittest.TestCase):
         self.assertNotIn(100, [row["id"] for row in payload["items"]])
         self.assertEqual(self.request("/history/1")[0], 200)
 
+    def test_http_sort_options_change_server_order(self):
+        for sort, reverse in (("name_asc", False), ("name_desc", True)):
+            status, payload = self.request(f"/history?page=1&page_size=100&search=file-&sort={sort}")
+            self.assertEqual(status, 200)
+            names = [row["filename"] for row in payload["items"]]
+            self.assertEqual(len(names), 61)
+            self.assertEqual(names, sorted(names, reverse=reverse))
+        for sort, reverse in (("oldest", False), ("newest", True)):
+            status, payload = self.request(f"/history?page=1&page_size=100&search=file-&sort={sort}")
+            self.assertEqual(status, 200)
+            times = [row["created_at"] for row in payload["items"]]
+            self.assertEqual(times, sorted(times, reverse=reverse))
+
+    def test_http_page_size_changes_rows_and_page_count(self):
+        first_page_ids = None
+        for size, pages in ((10, 7), (25, 3), (50, 2), (100, 1)):
+            status, payload = self.request(f"/history?page=1&page_size={size}")
+            self.assertEqual(status, 200)
+            self.assertEqual(len(payload["items"]), min(size, 66))
+            self.assertEqual((payload["total"], payload["pages"]), (66, pages))
+            if size == 10:
+                first_page_ids = {str(row["id"]) for row in payload["items"]}
+        status, second_page = self.request("/history?page=2&page_size=10")
+        self.assertEqual(status, 200)
+        self.assertEqual(len(second_page["items"]), 10)
+        self.assertTrue(first_page_ids.isdisjoint(str(row["id"]) for row in second_page["items"]))
+
+    def test_http_repeated_request_reads_current_database_values(self):
+        path = "/history?page=1&page_size=10&search=refresh-proof"
+        self.assertEqual(self.request(path)[1]["total"], 0)
+        record = TranscriptionHistory(user_id=1, filename="refresh-proof.wav", language="fa", text="first version")
+        self.db.add(record)
+        self.db.commit()
+        status, payload = self.request(path)
+        self.assertEqual((status, payload["total"]), (200, 1))
+        self.assertEqual(payload["items"][0]["text"], "first version")
+        record.text = "updated version"
+        self.db.commit()
+        self.assertEqual(self.request(path)[1]["items"][0]["text"], "updated version")
+
     def test_legacy_response_remains_an_array(self):
         status, rows = self.request("/history")
         self.assertEqual(status, 200)

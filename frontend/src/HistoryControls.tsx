@@ -1,5 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react'
-import { ArrowDownUp, Check, ChevronLeft, ChevronRight, FilterX, RefreshCw, Rows3, Search, SlidersHorizontal, X } from 'lucide-react'
+import { ArrowDownUp, Check, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, FilterX, RefreshCw, Rows3, Search, X } from 'lucide-react'
 
 export type HistoryFilters = { search: string; kind: string; sort: string; page_size: string }
 
@@ -34,7 +34,9 @@ function ChoiceMenu({ label, icon, value, options, active, onChange }: {
   const selected = options.find(option => option.value === value)?.label
   return (
     <details name="dashboard-history-options" className="dashboard-history-menu" onBlur={event => {
-      if (!event.currentTarget.contains(event.relatedTarget)) event.currentTarget.open = false
+      // Safari can report no next focus target while a menu option is being clicked.
+      // Outside pointer events are handled separately; do not hide options before click.
+      if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget)) event.currentTarget.open = false
     }}>
       <summary className={`dashboard-history-icon app-tooltip${active ? ' is-active' : ''}`} data-tooltip={`${label}: ${selected}`} aria-label={`${label}: ${selected}`}>
         {icon}
@@ -59,7 +61,9 @@ function ChoiceMenu({ label, icon, value, options, active, onChange }: {
 export default function HistoryControls({ fa, filters, page, pages, loading, onFilter, onPage, onRefresh, onReset }: Props) {
   const root = useRef<HTMLDivElement>(null)
   const search = useRef<HTMLInputElement>(null)
-  const changed = filters.search !== '' || filters.kind !== 'all' || filters.sort !== 'newest' || filters.page_size !== '10'
+  const changed = filters.search !== '' || filters.sort !== 'newest' || filters.page_size !== '10'
+  const first = fa ? 'اولین صفحه' : 'First page'
+  const last = fa ? 'آخرین صفحه' : 'Last page'
   const previous = fa ? 'صفحهٔ قبلی' : 'Previous page'
   const next = fa ? 'صفحهٔ بعدی' : 'Next page'
   const refresh = fa ? 'تازه‌سازی تاریخچه' : 'Refresh history'
@@ -90,12 +94,6 @@ export default function HistoryControls({ fa, filters, page, pages, loading, onF
         {filters.search && <button className="app-tooltip" type="button" aria-label={fa ? 'پاک‌کردن جست‌وجو' : 'Clear search'} data-tooltip={fa ? 'پاک‌کردن جست‌وجو' : 'Clear search'} onClick={() => { onFilter('search', ''); search.current?.focus() }}><X size={14} aria-hidden="true" /></button>}
       </div>
       <div className="dashboard-history-tools">
-        <ChoiceMenu label={fa ? 'نوع تبدیل' : 'Conversion type'} icon={<SlidersHorizontal size={17} aria-hidden="true" />} value={filters.kind} active={filters.kind !== 'all'} onChange={value => onFilter('kind', value)} options={[
-          { value: 'all', label: fa ? 'همهٔ تبدیل‌ها' : 'All conversions' },
-          { value: 'stt', label: fa ? 'گفتار به متن (STT)' : 'Speech to text (STT)' },
-          { value: 'tts', label: fa ? 'متن به گفتار (TTS)' : 'Text to speech (TTS)' },
-          { value: 'video', label: fa ? 'ویدیو' : 'Video' },
-        ]} />
         <ChoiceMenu label={fa ? 'مرتب‌سازی' : 'Sort'} icon={<ArrowDownUp size={17} aria-hidden="true" />} value={filters.sort} active={filters.sort !== 'newest'} onChange={value => onFilter('sort', value)} options={[
           { value: 'newest', label: fa ? 'جدیدترین' : 'Newest' },
           { value: 'oldest', label: fa ? 'قدیمی‌ترین' : 'Oldest' },
@@ -107,12 +105,14 @@ export default function HistoryControls({ fa, filters, page, pages, loading, onF
         {changed && <button className="dashboard-history-icon app-tooltip" type="button" data-tooltip={reset} aria-label={reset} onClick={onReset}><FilterX size={16} aria-hidden="true" /></button>}
       </div>
       <nav className="dashboard-history-pagination" aria-label={fa ? 'صفحه‌بندی تاریخچه' : 'History pagination'}>
+        <button className="dashboard-history-icon app-tooltip" type="button" data-tooltip={first} aria-label={first} disabled={loading || page <= 1} onClick={() => onPage(1)}>{fa ? <ChevronsRight size={18} aria-hidden="true" /> : <ChevronsLeft size={18} aria-hidden="true" />}</button>
         <button className="dashboard-history-icon app-tooltip" type="button" data-tooltip={previous} aria-label={previous} disabled={loading || page <= 1} onClick={() => onPage(page - 1)}>{fa ? <ChevronRight size={18} aria-hidden="true" /> : <ChevronLeft size={18} aria-hidden="true" />}</button>
         <span className="dashboard-history-page-counter" aria-live="polite">
           <span className="dashboard-history-current-page">{number(page)}</span>
           <span className="dashboard-history-page-total">{fa ? 'از' : 'of'} {number(pages)}</span>
         </span>
         <button className="dashboard-history-icon app-tooltip" type="button" data-tooltip={next} aria-label={next} disabled={loading || page >= pages} onClick={() => onPage(page + 1)}>{fa ? <ChevronLeft size={18} aria-hidden="true" /> : <ChevronRight size={18} aria-hidden="true" />}</button>
+        <button className="dashboard-history-icon app-tooltip" type="button" data-tooltip={last} aria-label={last} disabled={loading || page >= pages} onClick={() => onPage(pages)}>{fa ? <ChevronsLeft size={18} aria-hidden="true" /> : <ChevronsRight size={18} aria-hidden="true" />}</button>
       </nav>
     </div>
   )

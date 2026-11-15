@@ -13,14 +13,14 @@ import ProtectedRoute from './ProtectedRoute'
 import Login from './Login'
 import Dashboard from './Dashboard'
 import FileDetail from './FileDetail'
-import { AudioPlayerProvider } from './AudioPlayer'
+import BrandPalette from './BrandPalette'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
-      <AudioPlayerProvider>
-        <Routes>
-          <Route path="/" element={<App />} />
+      <Routes>
+        <Route path="/" element={<App />} />
+        <Route element={<BrandPalette />}>
           <Route path="/studio" element={<MediaStudio />} />
           <Route path="/studio/stt" element={<Studio />} />
           <Route path="/studio/tts" element={<TTSStudio />} />
@@ -36,9 +36,9 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/login" element={<Login />} />
           <Route path="/dashboard/files/:id" element={<FileDetail />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </AudioPlayerProvider>
+        </Route>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </BrowserRouter>
   </StrictMode>,
 )
