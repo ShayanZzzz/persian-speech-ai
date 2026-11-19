@@ -40,7 +40,7 @@ test('page overrides migrate only the selected page, including aliases and detai
 test('all migrated CSS roles have central light and dark definitions', () => {
   const bridge = readFileSync(new URL('../src/BrandPalette.css', import.meta.url), 'utf8')
   const stylesByPalette = ['deep-teal', 'warm-amber'].map(id => paletteStyles(id as 'deep-teal' | 'warm-amber'))
-  const names = ['Studio', 'Dashboard', 'StudioHeader', 'MediaStudio', 'TTSStudio', 'VideoEditor', 'FileDetail', 'Login', 'AudioPlayer', 'SharedTooltip']
+  const names = ['Studio', 'Dashboard', 'StudioHeader', 'MediaStudio', 'TTSStudio', 'VideoEditor', 'FileDetail', 'Login', 'AudioPlayer', 'SharedTooltip', 'components/StudioSelect']
   for (const name of names) {
     const css = readFileSync(new URL(`../src/${name}.css`, import.meta.url), 'utf8')
     for (const [, role] of css.matchAll(/var\(--brand-([a-z-]+),/g)) {

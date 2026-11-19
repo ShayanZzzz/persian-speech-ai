@@ -1,6 +1,6 @@
 # Development Guide --- Persian Speech AI / Negar
 
-Last updated: 2026-11-16
+Last updated: 2026-11-19
 
 This file is the project handoff document. Update it when architecture,
 implementation status, or important decisions change. Prefer concise,
@@ -39,7 +39,8 @@ Known development environment:
 -   PostgreSQL: 17.11
 -   FFmpeg: Homebrew installation; FFprobe is used for media validation
 -   Backend development URL: `http://127.0.0.1:8000`
--   Frontend development URL: `http://127.0.0.1:5173`
+-   Main frontend URL (user-confirmed 2026-11-17): `http://localhost:5174`
+-   Subtitle studio: `http://localhost:5174/studio/video`
 
 Use `uv run python` rather than bare `python`.
 
@@ -54,6 +55,14 @@ Run the frontend in a separate terminal using the project's package
 scripts (inspect `package.json` if the exact script is uncertain).
 
 The Vite development proxy currently targets `http://127.0.0.1:8000`.
+
+The main running frontend belongs to `/Users/a1/persian-speech-ai/frontend`.
+The separate `Shayan Ecosystem/workshop-redesign` folder on port 5175 is an
+experimental preview; `Shayan Ecosystem/negar-history-work` is a snapshot.
+Changes to either do not update port 5174. For Negar feature requests, edit this
+main repository and verify port 5174 serves the updated source before reporting
+completion. Check the active server/source mapping if the environment changes;
+do not assume the default Vite port.
 
 ## 3. Working conventions
 
@@ -197,6 +206,42 @@ paths in the repository before editing.
 - [Negar in Notion](https://app.notion.com/p/412cdb6adfbe810fbc75c39f45eba2b6)
   tracks the matching project update. No deployment was performed. Blender,
   workshop images, backups, and unrelated local media were excluded from commits.
+
+### Subtitle studio automatic generation (2026-11-17)
+
+- VideoEditor reads the STT catalog from `/models` and sends video, model and
+  language to `/transcribe` with existing bearer/cookie authentication. Timed
+  segments populate the timeline; cancellation and failures preserve existing
+  edits. Re-generation appends unless replacement is explicitly selected.
+- A large transcript workspace edits the same state as preview and subtitle
+  exports. Optional word probabilities below 0.6 receive red review hints;
+  current inference does not yet provide these scores.
+- Video filters, brightness and contrast affect preview only; MP4 rendering
+  remains unchanged. Preview settings are recorded in project JSON.
+- Copied the verified changes into the main frontend served on localhost:5174.
+  The preceding preview QA used synthetic speech and real `/transcribe` through
+  port 5175, confirming timed generation and synchronized text editing.
+
+### Shared studio selector (2026-11-17)
+
+- `frontend/src/components/StudioSelect.tsx` and `StudioSelect.css` own the
+  reusable content-sized dropdown, based on the STT Whisper selector. Props:
+  `label`, `value`, `onChange`, `options` (`value`, `label`, optional `icon` and
+  `description`), optional `icon`, `placeholder`, and `disabled`.
+- Both STT model/audio-language and Video model/speech-language selectors use
+  this component. Their model IDs, language values and API fields are unchanged.
+  Edit the component's single SVG triangle and shared CSS to change every usage.
+  Page styles control placement only; triggers size to their content.
+  The shared indicator is a small, soft-cornered filled triangle, tinted to match
+  the selector, that brightens on hover/focus and rotates when open. Its SVG/CSS
+  live in the shared component.
+- Shared behavior: selected option, outside-pointer/blur dismissal, focus return,
+  Escape, Arrow keys, Home/End, Enter/Space and RTL. Palette roles and classic
+  light/dark fallbacks are shared. Removed superseded selector CSS from Studio.
+- Safari on localhost:5174 verified model and language selection in both pages,
+  Home/End/Enter, Escape, longer labels, and Video light/dark appearance.
+  No new transcription was needed for this UI refactor. Mobile sizing has not
+  received a new browser-level check. Build, targeted lint and 9 regressions pass.
 
 ## 5. Completed and verified milestones
 

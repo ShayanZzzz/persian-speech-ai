@@ -11,3 +11,13 @@
   obsolete overrides. Reuse shared `--brand-*` roles instead of new literal colors.
 - Light/dark mode and visual palette are separate. Preserve semantic status colors,
   user-selected subtitle colors, third-party logos, and the separate Shayan Workshop brand.
+
+- Main Negar URL (user-confirmed 2026-11-17): `http://localhost:5174`; subtitle
+  studio: `/studio/video`. Edit this repository for main-app requests and verify
+  the served source on port 5174. The separate workshop preview on port 5175
+  and `negar-history-work` snapshot do not update the main running application.
+
+- Reuse `frontend/src/components/StudioSelect.tsx` for Negar model/language
+  dropdowns. Its CSS and inline SVG filled triangle are the single source for appearance and
+  the arrow. Keep page-specific layout in the page stylesheet; do not duplicate
+  selector internals or force a fixed trigger width. STT and Video both use it.

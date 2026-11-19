@@ -2,13 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import './VideoEditor.css'
 import StudioHeader from './StudioHeader'
-
-type Subtitle = {
-  id: string
-  start: number
-  end: number
-  text: string
-}
+import StudioSelect from './components/StudioSelect'
+import { Languages } from 'lucide-react'
+import type { ModelsResponse, SpeechToTextModel } from './config/models'
+import { parseSubtitleSegments, type Subtitle } from './subtitleSegments'
 
 type EditorLocationState = {
   file?: File
@@ -52,6 +49,7 @@ export default function VideoEditor() {
   const navigate = useNavigate()
   const videoRef = useRef<HTMLVideoElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const transcriptionRef = useRef<AbortController | null>(null)
   const state = location.state as EditorLocationState | null
   const [lang, setLang] = useState<'fa' | 'en'>('fa')
   const fa = lang === 'fa'
@@ -75,6 +73,40 @@ export default function VideoEditor() {
   const [message, setMessage] = useState('')
   const [exportingVideo, setExportingVideo] = useState(false)
 
+  const [models, setModels] = useState<SpeechToTextModel[]>([])
+  const [modelName, setModelName] = useState('base')
+  const [modelsError, setModelsError] = useState(false)
+  const [modelLoad, setModelLoad] = useState(0)
+  const [speechLanguage, setSpeechLanguage] = useState('auto')
+  const [generating, setGenerating] = useState(false)
+  const [generationMessage, setGenerationMessage] = useState('')
+  const [generationError, setGenerationError] = useState(false)
+  const [replaceExisting, setReplaceExisting] = useState(false)
+  const [filter, setFilter] = useState('none')
+  const [brightness, setBrightness] = useState(100)
+  const [contrast, setContrast] = useState(100)
+  const [reviewOnly, setReviewOnly] = useState(false)
+  const needsReview = (item: Subtitle) => item.words?.some(word => word.probability !== undefined && word.probability < 0.6) ?? false
+  const reviewCount = subtitles.filter(needsReview).length
+  const previewFilter = `${filter} brightness(${brightness}%) contrast(${contrast}%)`
+
+  useEffect(() => {
+    const controller = new AbortController()
+    fetch('/models', { signal: controller.signal })
+      .then(async response => {
+        if (!response.ok) throw new Error('Models unavailable')
+        const data: ModelsResponse = await response.json()
+        const available = data.categories.find(category => category.id === 'speech_to_text' && category.enabled)?.models ?? []
+        if (!available.length) throw new Error('No models available')
+        setModels(available)
+        setModelName(current => available.some(model => model.id === current) ? current : available[0].id)
+      })
+      .catch(() => { if (!controller.signal.aborted) setModelsError(true) })
+    return () => controller.abort()
+  }, [modelLoad])
+
+  useEffect(() => () => transcriptionRef.current?.abort(), [])
+
   const selected = subtitles.find((item) => item.id === selectedId) ?? null
   const timelineDuration = duration || Math.max(30, ...subtitles.map((item) => item.end))
   const rulerTicks = Array.from(
@@ -89,13 +121,11 @@ export default function VideoEditor() {
   )
 
   useEffect(() => {
-    if (!file) {
-      setVideoUrl('')
-      return
-    }
-    const url = URL.createObjectURL(file)
+    const url = file ? URL.createObjectURL(file) : ''
+    // The URL must be allocated and revoked together, including Strict Mode remounts.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setVideoUrl(url)
-    return () => URL.revokeObjectURL(url)
+    return () => { if (url) URL.revokeObjectURL(url) }
   }, [file])
 
   useEffect(() => {
@@ -108,6 +138,13 @@ export default function VideoEditor() {
       setMessage(fa ? 'لطفاً یک فایل ویدیویی انتخاب کنید.' : 'Please select a video file.')
       return
     }
+    transcriptionRef.current?.abort()
+    transcriptionRef.current = null
+    setGenerating(false)
+    setGenerationMessage('')
+    setSubtitles([])
+    setSelectedId(null)
+    setReplaceExisting(false)
     setFile(next)
     setCurrentTime(0)
     setDuration(0)
@@ -117,8 +154,64 @@ export default function VideoEditor() {
 
   function updateSubtitle(id: string, changes: Partial<Subtitle>) {
     setSubtitles((current) =>
-      current.map((item) => item.id === id ? { ...item, ...changes } : item),
+      current.map((item) => item.id === id ? { ...item, ...changes, ...(changes.text !== undefined ? { words: undefined } : {}) } : item),
     )
+  }
+
+  function cancelGeneration() {
+    transcriptionRef.current?.abort()
+    transcriptionRef.current = null
+    setGenerating(false)
+    setGenerationError(false)
+    setGenerationMessage(fa ? 'دریافت نتیجه لغو شد؛ متن قبلی حفظ شد. پردازش سرور ممکن است ادامه داشته باشد.' : 'Result retrieval cancelled. Existing text was preserved. Server processing may continue.')
+  }
+
+  async function generateSubtitles() {
+    if (!file || transcriptionRef.current || !models.length) return
+    if (file.size > 25 * 1024 * 1024) {
+      setGenerationError(true)
+      setGenerationMessage(fa ? 'حداکثر حجم ویدیو برای تولید خودکار ۲۵ مگابایت است.' : 'The maximum video size for automatic generation is 25 MB.')
+      return
+    }
+    const controller = new AbortController()
+    transcriptionRef.current = controller
+    videoRef.current?.pause()
+    setGenerating(true)
+    setGenerationError(false)
+    setGenerationMessage('')
+    try {
+      const form = new FormData()
+      form.append('file', file)
+      form.append('model_name', modelName)
+      form.append('language', speechLanguage)
+      const token = localStorage.getItem('access_token')
+      const response = await fetch('/transcribe', {
+        method: 'POST', body: form, credentials: 'include',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        signal: controller.signal,
+      })
+      const data = await response.json().catch(() => ({}))
+      if (controller.signal.aborted || transcriptionRef.current !== controller) return
+      if (!response.ok) {
+        if (response.status === 429) throw new Error(fa ? 'سهمیهٔ رایگان تمام شده است. برای ادامه وارد حساب شوید یا حساب بسازید.' : 'Your free quota has been used. Sign in or create an account to continue.')
+        throw new Error(typeof data.detail === 'string' ? data.detail : (fa ? 'تولید زیرنویس ناموفق بود.' : 'Subtitle generation failed.'))
+      }
+      const generated = parseSubtitleSegments(data.segments)
+      if (!generated.length) throw new Error(fa ? 'گفتار زمان‌داری پیدا نشد. زبان یا فایل را بررسی کنید؛ متن قبلی حفظ شد.' : 'No timed speech was found. Check the language or file. Existing text was preserved.')
+      setSubtitles(current => (replaceExisting ? generated : [...current, ...generated]).sort((a, b) => a.start - b.start))
+      setSelectedId(generated[0].id)
+      setReviewOnly(false)
+      setGenerationMessage(fa ? `${generated.length} قطعهٔ زیرنویس ساخته شد؛ متن و زمان‌بندی را بازبینی کنید.` : `${generated.length} subtitle segments generated. Review the text and timing.`)
+    } catch (error) {
+      if (controller.signal.aborted || transcriptionRef.current !== controller) return
+      setGenerationError(true)
+      setGenerationMessage(error instanceof Error ? error.message : (fa ? 'ارتباط با سرور برقرار نشد.' : 'Could not connect to the server.'))
+    } finally {
+      if (transcriptionRef.current === controller) {
+        transcriptionRef.current = null
+        setGenerating(false)
+      }
+    }
   }
 
   function addSubtitle() {
@@ -247,6 +340,7 @@ export default function VideoEditor() {
         filename: file?.name ?? null,
         subtitles,
         style: { fontSize, fontFamily, fontColor, backgroundColor, position },
+        previewAdjustments: { filter, brightness, contrast },
       }, null, 2),
       'application/json;charset=utf-8',
     )
@@ -351,6 +445,41 @@ export default function VideoEditor() {
 
       </div>
 
+      <section className="ve-panel ve-generation" aria-busy={generating}>
+        <div className="ve-section-heading"><h2>{fa ? 'تولید خودکار زیرنویس' : 'Generate subtitles automatically'}</h2></div>
+        <p className="ve-empty-note">{fa ? 'ویدیو را انتخاب کنید، مدل و زبان را تنظیم کنید و زیرنویس زمان‌دار بسازید.' : 'Choose a video, model and language to generate timed subtitles.'}</p>
+        <div className="ve-generation-controls">
+          <StudioSelect
+            label={fa ? 'مدل تشخیص گفتار' : 'SPEECH MODEL'}
+            value={modelName}
+            onChange={setModelName}
+            disabled={generating || !models.length}
+            icon="🎙️"
+            placeholder={fa ? (modelsError ? 'مدل‌ها دریافت نشدند' : 'در حال دریافت مدل‌ها…') : (modelsError ? 'Models unavailable' : 'Loading models…')}
+            options={models.map(model => ({ value: model.id, label: model.name[lang], icon: model.icon, description: model.id }))}
+          />
+          <StudioSelect
+            label={fa ? 'زبان گفتار' : 'SPEECH LANGUAGE'}
+            value={speechLanguage}
+            onChange={setSpeechLanguage}
+            disabled={generating}
+            icon={<Languages />}
+            options={[
+              { value: 'auto', label: fa ? 'تشخیص خودکار' : 'Auto Detect' },
+              { value: 'fa', label: fa ? 'فارسی' : 'Persian' },
+              { value: 'en', label: fa ? 'انگلیسی' : 'English' },
+            ]}
+          />
+          <button className="ve-primary-button" disabled={!file || !models.length || generating || exportingVideo} onClick={() => void generateSubtitles()}>{generating ? (fa ? 'در حال تولید زیرنویس…' : 'Generating subtitles…') : (fa ? 'تولید خودکار زیرنویس' : 'Generate subtitles')}</button>
+          {generating && <button className="ve-secondary-button" onClick={cancelGeneration}>{fa ? 'لغو تولید' : 'Cancel generation'}</button>}
+        </div>
+        {subtitles.length > 0 && <label className="ve-review-toggle"><input type="checkbox" checked={replaceExisting} disabled={generating} onChange={event => setReplaceExisting(event.target.checked)} />{fa ? 'جایگزینی متن فعلی با نتیجهٔ جدید (در حالت عادی قطعه‌ها اضافه می‌شوند)' : 'Replace existing subtitles (otherwise new segments are added)'}</label>}
+        {modelsError && <p className="ve-generation-error" role="alert">{fa ? 'دریافت مدل‌ها از سرور ناموفق بود.' : 'Could not load models from the server.'} <button className="ve-secondary-button" onClick={() => { setModelsError(false); setModelLoad(value => value + 1) }}>{fa ? 'تلاش دوباره' : 'Retry'}</button></p>}
+        {!file && <p className="ve-empty-note">{fa ? 'برای شروع، از بخش پیش‌نمایش ویدیو انتخاب کنید. حداکثر حجم برای تولید خودکار: ۲۵ مگابایت.' : 'Select a video in the preview section to begin. Automatic generation supports files up to 25 MB.'}</p>}
+        {generating && <p role="status" className="ve-message">{fa ? 'ویسپر در حال پردازش است؛ این کار ممکن است چند دقیقه طول بکشد.' : 'Whisper is processing your video. This may take several minutes.'}</p>}
+        {generationMessage && <p className={generationError ? 've-generation-error' : 've-message'} role={generationError ? 'alert' : 'status'}>{generationMessage}</p>}
+      </section>
+
       <div className="ve-workspace">
         <button
           className="ve-secondary-button ve-back-aligned"
@@ -392,8 +521,9 @@ export default function VideoEditor() {
                   ref={videoRef}
                   src={videoUrl}
                   playsInline
+                  style={{ filter: previewFilter }}
                   onClick={togglePlayback}
-                  onLoadedMetadata={(event) => setDuration(event.currentTarget.duration || 0)}
+                  onLoadedMetadata={(event) => setDuration(Number.isFinite(event.currentTarget.duration) ? event.currentTarget.duration : 0)}
                   onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
                   onPlay={() => setPlaying(true)}
                   onPause={() => setPlaying(false)}
@@ -401,6 +531,7 @@ export default function VideoEditor() {
                 {activeSubtitle && (
                   <div
                     className={`ve-subtitle-overlay ve-position-${position}`}
+                    dir="auto"
                     style={{
                       fontSize: `${fontSize}px`,
                       color: fontColor,
@@ -451,8 +582,8 @@ export default function VideoEditor() {
               <div>
                                 <h2>{fa ? 'تایم‌لاین زیرنویس' : 'Subtitle Timeline'}</h2>
               </div>
-              <button className="ve-primary-button" onClick={addSubtitle}>
-                + افزودن قطعه
+              <button className="ve-secondary-button" onClick={addSubtitle} disabled={generating}>
+                {fa ? '+ افزودن قطعهٔ دستی' : '+ Add manually'}
               </button>
             </div>
 
@@ -512,7 +643,7 @@ export default function VideoEditor() {
 
               {subtitles.length === 0 && (
                 <p className="ve-empty-note ve-timeline-empty">
-                  {fa ? 'برای شروع، یک قطعهٔ زیرنویس اضافه کنید.' : 'Add a subtitle to get started.'}
+                  {fa ? 'زیرنویس خودکار بسازید یا یک قطعهٔ دستی اضافه کنید.' : 'Add a subtitle to get started.'}
                 </p>
               )}
 
@@ -565,17 +696,33 @@ export default function VideoEditor() {
               />
             </div>
           </section>
-        </section>
-
-        <aside className="ve-sidebar">
-          <section className="ve-panel">
+          <section className="ve-panel ve-transcript-panel">
+            <div className="ve-section-heading">
+              <h2>{fa ? 'متن کامل و بازبینی' : 'Transcript & review'} <small>({subtitles.length})</small></h2>
+              <label className="ve-review-toggle"><input type="checkbox" checked={reviewOnly} onChange={event => setReviewOnly(event.target.checked)} />{fa ? `فقط نیازمند بازبینی (${reviewCount})` : `Needs review (${reviewCount})`}</label>
+            </div>
+            <p className="ve-empty-note">{fa ? 'هر قطعه را مستقیم ویرایش کنید؛ با کلیک روی زمان، همان بخش پخش می‌شود. کلمات با اطمینان پایین، در صورت دریافت از موتور تشخیص، قرمز نمایش داده می‌شوند.' : 'Edit each segment directly; click its time to seek. Low-confidence words appear in red when supplied by the speech engine.'}</p>
+            <div className="ve-transcript-list">
+              {subtitles.filter(item => !reviewOnly || needsReview(item)).sort((a, b) => a.start - b.start).map((item, index) => (
+                <article key={item.id} className={`ve-transcript-row ${selectedId === item.id ? 'is-selected' : ''}`}>
+                  <button className="ve-secondary-button" onClick={() => { setSelectedId(item.id); jumpTo(item.start) }} aria-label={`${fa ? 'رفتن به قطعه' : 'Go to segment'} ${index + 1}`}><span dir="ltr">{formatTime(item.start)}</span></button>
+                  <textarea aria-label={`${fa ? 'متن قطعه' : 'Segment text'} ${index + 1}`} dir="auto" rows={3} value={item.text} disabled={generating} onFocus={() => setSelectedId(item.id)} onChange={event => updateSubtitle(item.id, { text: event.target.value })} />
+                  {needsReview(item) && <p className="ve-word-review" aria-label={fa ? 'کلمات نیازمند بازبینی' : 'Words to review'}>{item.words?.map((word, i) => <span key={i} className={word.probability !== undefined && word.probability < 0.6 ? 've-uncertain-word' : ''}>{word.word}{' '}</span>)}</p>}
+                </article>
+              ))}
+              {(!subtitles.length || (reviewOnly && !reviewCount)) && <p className="ve-empty-note">{fa ? (reviewOnly ? 'قطعه‌ای برای بازبینی علامت‌گذاری نشده است.' : 'بعد از تولید خودکار یا افزودن قطعه، متن اینجا نمایش داده می‌شود.') : (reviewOnly ? 'No segments are flagged for review.' : 'Generate subtitles or add a segment to start editing here.')}</p>}
+            </div>
+          </section>
+          <section className="ve-panel ve-text-editor">
                         <h2>{fa ? 'ویرایش زیرنویس' : 'Edit Subtitle'}</h2>
             {selected ? (
               <>
                 <label className="ve-field">
                   {fa ? 'متن زیرنویس' : 'Subtitle text'}
                   <textarea
-                    rows={4}
+                    dir="auto"
+                    rows={8}
+                    disabled={generating}
                     value={selected.text}
                     onChange={(event) => updateSubtitle(selected.id, { text: event.target.value })}
                   />
@@ -598,6 +745,7 @@ export default function VideoEditor() {
                 </label>
                 <button
                   className="ve-danger-button"
+                  disabled={generating}
                   onClick={() => {
                     setSubtitles((current) => current.filter((item) => item.id !== selected.id))
                     setSelectedId(null)
@@ -611,6 +759,9 @@ export default function VideoEditor() {
             )}
           </section>
 
+        </section>
+
+        <aside className="ve-sidebar">
           <section className="ve-panel">
                         <h2>{fa ? 'ظاهر زیرنویس' : 'Subtitle Appearance'}</h2>
             <label className="ve-field">
@@ -641,6 +792,17 @@ export default function VideoEditor() {
           </section>
 
           <section className="ve-panel">
+            <h2>{fa ? 'تنظیم تصویر' : 'Video adjustments'}</h2>
+            <p className="ve-empty-note">{fa ? 'فقط پیش‌نمایش؛ این تنظیمات فعلاً در خروجی MP4 اعمال نمی‌شوند.' : 'Preview only. These adjustments are not yet applied to MP4 exports.'}</p>
+            <label className="ve-field">{fa ? 'فیلتر تصویر' : 'Video filter'}<select value={filter} onChange={event => setFilter(event.target.value)}>
+              <option value="none">{fa ? 'طبیعی' : 'Original'}</option><option value="grayscale(1)">{fa ? 'سیاه و سفید' : 'Black & white'}</option><option value="sepia(0.45)">{fa ? 'گرم' : 'Warm'}</option><option value="saturate(1.4)">{fa ? 'رنگ زنده' : 'Vivid'}</option>
+            </select></label>
+            <label className="ve-field">{fa ? 'روشنایی' : 'Brightness'}: {brightness}%<input type="range" min="50" max="150" value={brightness} onChange={event => setBrightness(Number(event.target.value))} /></label>
+            <label className="ve-field">{fa ? 'کنتراست' : 'Contrast'}: {contrast}%<input type="range" min="50" max="150" value={contrast} onChange={event => setContrast(Number(event.target.value))} /></label>
+            <button className="ve-secondary-button ve-full-button" onClick={() => { setFilter('none'); setBrightness(100); setContrast(100) }}>{fa ? 'بازنشانی تصویر' : 'Reset adjustments'}</button>
+          </section>
+
+          <section className="ve-panel">
                         <h2>{fa ? 'خروجی' : 'Export'}</h2>
             <p className="ve-export-note">
               {fa ? 'زیرنویس‌ها را دائماً روی تصویر رندر و ویدیوی MP4 نهایی را دانلود کنید.' : 'Burn subtitles into the video and download the final MP4.'}
@@ -648,7 +810,7 @@ export default function VideoEditor() {
             <button
               className="ve-primary-button ve-full-button"
               onClick={exportVideo}
-              disabled={!file || exportingVideo}
+              disabled={!file || exportingVideo || generating}
             >
               {exportingVideo ? (fa ? 'در حال ساخت ویدیو...' : 'Rendering video...') : (fa ? 'دانلود MP4 با زیرنویس' : 'Download MP4 with Subtitles')}
             </button>

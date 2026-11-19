@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { ChevronDown, Languages } from 'lucide-react'
+import { Languages } from 'lucide-react'
 import { useAudioPlayer } from './AudioPlayer'
 import './Studio.css'
 import StudioHeader from './StudioHeader'
+import StudioSelect from './components/StudioSelect'
 import type { ModelId, ModelsResponse, SpeechToTextModel } from './config/models'
 import { useNavigate } from 'react-router-dom'
 
@@ -18,7 +19,6 @@ function Studio() {
   const [modelName, setModelName] = useState<ModelId>("base")
   const [transcriptionLanguage, setTranscriptionLanguage] = useState<'auto' | 'fa' | 'en'>('auto')
   const [availableModels, setAvailableModels] = useState<SpeechToTextModel[]>([])
-  const selectedModel = availableModels.find((model) => model.id === modelName)
 
   useEffect(() => {
     const loadModels = async () => {
@@ -34,8 +34,8 @@ function Studio() {
         const models = category?.models ?? []
         setAvailableModels(models)
 
-        if (models.length > 0 && !models.some((model) => model.id === modelName)) {
-          setModelName(models[0].id)
+        if (models.length > 0) {
+          setModelName(current => models.some(model => model.id === current) ? current : models[0].id)
         }
       } catch (error) {
         console.error('Unable to load speech-to-text models:', error)
@@ -45,54 +45,6 @@ function Studio() {
     loadModels()
   }, [])
 
-  const [modelMenuOpen, setModelMenuOpen] = useState(false)
-  const modelControlRef = useRef<HTMLDivElement>(null)
-  const [languageMenuOpen, setLanguageMenuOpen] = useState(false)
-  const languageControlRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!modelMenuOpen) return
-
-    const handlePointerDown = (event: PointerEvent) => {
-      if (!modelControlRef.current?.contains(event.target as Node)) {
-        setModelMenuOpen(false)
-      }
-    }
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setModelMenuOpen(false)
-    }
-
-    document.addEventListener('pointerdown', handlePointerDown)
-    document.addEventListener('keydown', handleKeyDown)
-
-    return () => {
-      document.removeEventListener('pointerdown', handlePointerDown)
-      document.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [modelMenuOpen])
-
-  useEffect(() => {
-    if (!languageMenuOpen) return
-
-    const handlePointerDown = (event: PointerEvent) => {
-      if (!languageControlRef.current?.contains(event.target as Node)) {
-        setLanguageMenuOpen(false)
-      }
-    }
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setLanguageMenuOpen(false)
-    }
-
-    document.addEventListener('pointerdown', handlePointerDown)
-    document.addEventListener('keydown', handleKeyDown)
-
-    return () => {
-      document.removeEventListener('pointerdown', handlePointerDown)
-      document.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [languageMenuOpen])
   const [dragging, setDragging] = useState(false)
   const [lang, setLang] = useState<Language>('fa')
   const [darkMode, setDarkMode] = useState(
@@ -302,103 +254,28 @@ function Studio() {
           <button className="negar-primary-button negar-file-button" type="button" onClick={() => inputRef.current?.click()}>
             {fa ? 'انتخاب فایل' : 'Choose a file'}
           </button>
-          <div className="negar-model-control" ref={modelControlRef}>
-            <button
-              className={`negar-primary-button negar-model-button negar-selector-button ${modelMenuOpen ? 'is-open' : ''}`}
-              type="button"
+          <div className="negar-studio-selectors">
+            <StudioSelect
+              label={fa ? 'مدل تشخیص گفتار' : 'SPEECH MODEL'}
+              value={modelName}
+              onChange={setModelName}
+              disabled={processing || !availableModels.length}
+              placeholder={modelName}
+              icon="🎙️"
+              options={availableModels.map(model => ({ value: model.id, label: model.name[lang], icon: model.icon, description: model.id }))}
+            />
+            <StudioSelect
+              label={fa ? 'زبان صوت' : 'LANGUAGE'}
+              value={transcriptionLanguage}
+              onChange={setTranscriptionLanguage}
               disabled={processing}
-              aria-label={fa ? 'انتخاب مدل تشخیص گفتار' : 'Select transcription model'}
-              aria-expanded={modelMenuOpen}
-              aria-haspopup="true"
-              onClick={() => {
-                setLanguageMenuOpen(false)
-                setModelMenuOpen(open => !open)
-              }}
-            >
-              <span className="negar-model-animal" aria-hidden="true">
-                {selectedModel?.icon ?? '🎙️'}
-              </span>
-              <span className="negar-model-content">
-                <small>{fa ? 'مدل تشخیص گفتار' : 'SPEECH MODEL'}</small>
-                <bdi className="negar-model-label" dir="auto">
-                  {selectedModel?.name[fa ? 'fa' : 'en'] ?? modelName}
-                </bdi>
-              </span>
-              <ChevronDown className="negar-model-chevron" aria-hidden="true" />
-            </button>
-            <div id="negar-model-menu" className="negar-model-menu" hidden={!modelMenuOpen}>
-              {availableModels.map((model) => (
-                <button
-                  key={model.id}
-                  type="button"
-                  className={`negar-model-option ${modelName === model.id ? 'is-selected' : ''}`}
-                  onClick={() => {
-                    setModelName(model.id)
-                    setModelMenuOpen(false)
-                  }}
-                >
-                  <span className="negar-model-option-main">
-                    <span className="negar-model-animal" aria-hidden="true">
-                      {model.icon}
-                    </span>
-                    <bdi dir="auto">{model.name[fa ? 'fa' : 'en']}</bdi>
-                  </span>
-                  <small>{model.id}</small>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="negar-model-control negar-language-control" ref={languageControlRef}>
-            <button
-              className={`negar-primary-button negar-model-button negar-language-button ${languageMenuOpen ? 'is-open' : ''}`}
-              type="button"
-              disabled={processing}
-              aria-label={fa ? 'انتخاب زبان فایل صوتی' : 'Select audio language'}
-              aria-expanded={languageMenuOpen}
-              aria-haspopup="true"
-              onClick={() => {
-                setModelMenuOpen(false)
-                setLanguageMenuOpen(open => !open)
-              }}
-            >
-              <Languages className="negar-language-icon" aria-hidden="true" />
-              <span className="negar-language-content">
-                <small>{fa ? 'زبان صوت' : 'LANGUAGE'}</small>
-                <bdi dir="auto">
-                  {transcriptionLanguage === 'auto'
-                    ? (fa ? 'تشخیص خودکار' : 'Auto Detect')
-                    : transcriptionLanguage === 'fa'
-                      ? (fa ? 'فارسی' : 'Persian')
-                      : (fa ? 'انگلیسی' : 'English')}
-                </bdi>
-              </span>
-              <ChevronDown className="negar-model-chevron" aria-hidden="true" />
-            </button>
-
-            <div
-              id="negar-language-menu"
-              className="negar-model-menu negar-language-menu"
-              hidden={!languageMenuOpen}
-            >
-              {[
-                { id: 'auto', fa: 'تشخیص خودکار', en: 'Auto Detect' },
-                { id: 'fa', fa: 'فارسی', en: 'Persian' },
-                { id: 'en', fa: 'انگلیسی', en: 'English' },
-              ].map((language) => (
-                <button
-                  key={language.id}
-                  type="button"
-                  className={`negar-model-option ${transcriptionLanguage === language.id ? 'is-selected' : ''}`}
-                  onClick={() => {
-                    setTranscriptionLanguage(language.id as 'auto' | 'fa' | 'en')
-                    setLanguageMenuOpen(false)
-                  }}
-                >
-                  <bdi dir="auto">{fa ? language.fa : language.en}</bdi>
-                </button>
-              ))}
-            </div>
+              icon={<Languages />}
+              options={[
+                { value: 'auto', label: fa ? 'تشخیص خودکار' : 'Auto Detect' },
+                { value: 'fa', label: fa ? 'فارسی' : 'Persian' },
+                { value: 'en', label: fa ? 'انگلیسی' : 'English' },
+              ]}
+            />
           </div>
 
           {file && (
