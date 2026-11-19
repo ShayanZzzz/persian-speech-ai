@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { AudioLines, Check, ChevronDown, Download, Headphones, LoaderCircle, SlidersHorizontal } from 'lucide-react'
 import StudioHeader from './StudioHeader'
 import './TTSStudio.css'
 
@@ -10,6 +11,19 @@ type TTSVoice = {
   name: string
   language: string
 }
+
+// Decorative UI identities, not claims about the source speakers' appearance.
+// Voice source references: https://github.com/kyutai-labs/pocket-tts/blob/main/pocket_tts/utils/utils.py
+const voiceAvatars: Record<string, string> = {
+  alba: '👩🏻',
+  anna: '👩🏻‍🦰',
+  cosette: '👩🏻‍🦱',
+  jean: '👨🏻‍🦳',
+  marius: '👨🏻‍🦱',
+  javert: '🧔🏻‍♂️',
+}
+
+const voiceAvatar = (id: string) => voiceAvatars[id] ?? '🗣️'
 
 type VoiceProfile = {
   id: number
@@ -33,6 +47,9 @@ function TTSStudio() {
   const [audioDuration, setAudioDuration] = useState(0)
   const [voices, setVoices] = useState<TTSVoice[]>([])
   const [selectedVoice, setSelectedVoice] = useState('alba')
+  const [voiceMenuOpen, setVoiceMenuOpen] = useState(false)
+  const voiceControlRef = useRef<HTMLDivElement>(null)
+  const voiceButtonRef = useRef<HTMLButtonElement>(null)
   const [voicesLoading, setVoicesLoading] = useState(true)
   const [voicesError, setVoicesError] = useState('')
   const [voicesRetry, setVoicesRetry] = useState(0)
@@ -47,6 +64,25 @@ function TTSStudio() {
   const [editingProfileId, setEditingProfileId] = useState<number | null>(null)
   const [editingProfileName, setEditingProfileName] = useState("")
   const [profileActionId, setProfileActionId] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (!voiceMenuOpen) return
+    const handleOutside = (event: PointerEvent) => {
+      if (!voiceControlRef.current?.contains(event.target as Node)) setVoiceMenuOpen(false)
+    }
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setVoiceMenuOpen(false)
+        voiceButtonRef.current?.focus()
+      }
+    }
+    document.addEventListener('pointerdown', handleOutside)
+    document.addEventListener('keydown', handleEscape)
+    return () => {
+      document.removeEventListener('pointerdown', handleOutside)
+      document.removeEventListener('keydown', handleEscape)
+    }
+  }, [voiceMenuOpen])
 
   useEffect(() => {
     let active = true
@@ -403,15 +439,17 @@ function TTSStudio() {
           <section className="tts-panel tts-input-panel">
             <div className="tts-panel-heading">
               <div>
-                <span className="tts-step">{fa ? 'مرحله ۰۱' : 'STEP 01'}</span>
+                <span className="tts-step">{fa ? 'مرحلهٔ اول' : 'STEP 01'}</span>
                 <h2>{fa ? 'متن ورودی' : 'Input text'}</h2>
               </div>
               <span className="tts-char-count">
-                {text.length.toLocaleString(fa ? 'fa-IR' : 'en-US')} / 2000
+                {text.length.toLocaleString(fa ? 'fa-IR' : 'en-US')} / {(2000).toLocaleString(fa ? 'fa-IR' : 'en-US')}
               </span>
             </div>
 
             <textarea
+              id="tts-input-text"
+              aria-label={fa ? 'متن ورودی برای تبدیل به گفتار' : 'Text to convert to speech'}
               className="tts-textarea"
               value={text}
               onChange={(event) => setText(event.target.value.slice(0, 2000))}
@@ -429,6 +467,7 @@ function TTSStudio() {
               <div className="tts-language-options">
                 <button
                   type="button"
+                  aria-pressed={textLanguage === 'fa'}
                   className={textLanguage === 'fa' ? 'is-selected' : ''}
                   onClick={() => setTextLanguage('fa')}
                 >
@@ -436,6 +475,7 @@ function TTSStudio() {
                 </button>
                 <button
                   type="button"
+                  aria-pressed={textLanguage === 'en'}
                   className={textLanguage === 'en' ? 'is-selected' : ''}
                   onClick={() => setTextLanguage('en')}
                 >
@@ -448,38 +488,62 @@ function TTSStudio() {
           <section className="tts-panel tts-settings-panel">
             <div className="tts-panel-heading">
               <div>
-                <span className="tts-step">{fa ? 'مرحله ۰۲' : 'STEP 02'}</span>
+                <span className="tts-step">{fa ? 'مرحلهٔ دوم' : 'STEP 02'}</span>
                 <h2>{fa ? 'تنظیمات صدا' : 'Voice settings'}</h2>
               </div>
             </div>
 
-            <label className="tts-field-label">
-              {fa ? 'گوینده' : 'VOICE'}
-            </label>
-
-            <div className="tts-voice-card">
-              <div className="tts-voice-avatar">♫</div>
-              <div className="tts-voice-info">
-                <strong>{fa ? 'انتخاب گوینده' : 'Select voice'}</strong>
-                <span>
-                  {voicesLoading
-                    ? (fa ? 'در حال دریافت فهرست صداها...' : 'Loading voices...')
-                    : (fa ? 'گوینده موردنظر را انتخاب کن' : 'Choose your preferred voice')}
-                </span>
-              </div>
-              <select
-                className="tts-voice-select"
+            <div className="tts-voice-control" ref={voiceControlRef}>
+              <button
+                ref={voiceButtonRef}
+                type="button"
+                className={`tts-voice-trigger ${voiceMenuOpen ? 'is-open' : ''}`}
                 aria-label={fa ? 'انتخاب گوینده' : 'Select voice'}
-                value={selectedVoice}
-                onChange={(event) => setSelectedVoice(event.target.value)}
+                aria-expanded={voiceMenuOpen}
+                aria-haspopup="true"
+                aria-controls="tts-voice-menu"
                 disabled={voicesLoading || voices.length === 0}
+                onClick={() => setVoiceMenuOpen(open => !open)}
               >
-                {voices.map((voice) => (
-                  <option key={voice.id} value={voice.id}>
-                    {voice.name}
-                  </option>
+                <span className="tts-voice-emoji" aria-hidden="true">{voiceAvatar(selectedVoice)}</span>
+                <span className="tts-voice-trigger-content">
+                  <small>{fa ? 'گوینده' : 'VOICE'}</small>
+                  <bdi>{voicesLoading
+                    ? (fa ? 'در حال بارگذاری…' : 'Loading…')
+                    : voices.find(voice => voice.id === selectedVoice)?.name ?? (fa ? 'انتخاب گوینده' : 'Select voice')}</bdi>
+                </span>
+                <ChevronDown size={16} className="tts-voice-chevron" aria-hidden="true" />
+              </button>
+              <div id="tts-voice-menu" className="tts-voice-menu" hidden={!voiceMenuOpen}
+                role="group" aria-label={fa ? 'گوینده‌ها' : 'Voices'}
+                onKeyDown={event => {
+                  if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return
+                  event.preventDefault()
+                  const options = Array.from(event.currentTarget.querySelectorAll('button'))
+                  const current = options.indexOf(document.activeElement as HTMLButtonElement)
+                  const next = event.key === 'Home' ? 0 : event.key === 'End' ? options.length - 1
+                    : (current + (event.key === 'ArrowDown' ? 1 : -1) + options.length) % options.length
+                  options[next]?.focus()
+                }}
+              >
+                {voices.map(voice => (
+                  <button key={voice.id} type="button"
+                    className={`tts-voice-option ${selectedVoice === voice.id ? 'is-selected' : ''}`}
+                    aria-pressed={selectedVoice === voice.id}
+                    onClick={() => {
+                      setSelectedVoice(voice.id)
+                      setVoiceMenuOpen(false)
+                      voiceButtonRef.current?.focus()
+                    }}
+                  >
+                    <span className="tts-voice-option-main">
+                      <span className="tts-voice-emoji" aria-hidden="true">{voiceAvatar(voice.id)}</span>
+                      <bdi>{voice.name}</bdi>
+                    </span>
+                    {selectedVoice === voice.id && <Check size={16} aria-hidden="true" />}
+                  </button>
                 ))}
-              </select>
+              </div>
             </div>
             <div className="tts-custom-voices">
               <div className="tts-custom-voices-info">
@@ -495,9 +559,12 @@ function TTSStudio() {
               <button
                 type="button"
                 className="tts-custom-voices-button"
-                onClick={() => setVoiceProfilesOpen(true)}
+                aria-expanded={voiceProfilesOpen}
+                aria-controls="tts-voice-profiles"
+                onClick={() => setVoiceProfilesOpen(!voiceProfilesOpen)}
               >
-                {fa ? 'مدیریت پروفایل‌ها' : 'Manage profiles'}
+                <SlidersHorizontal size={16} aria-hidden="true" />
+                {fa ? 'مدیریت صداها' : 'Manage voices'}
               </button>
             </div>
 
@@ -508,7 +575,7 @@ function TTSStudio() {
             )}
 
             {voiceProfilesOpen && (
-              <div className="tts-custom-voices-list">
+              <div className="tts-custom-voices-list" id="tts-voice-profiles">
                 <div className="tts-profile-upload-form">
                   <strong>{fa ? 'ثبت پروفایل صدای جدید' : 'Add a new voice profile'}</strong>
 
@@ -669,10 +736,9 @@ function TTSStudio() {
             <label className="tts-field-label">
               {fa ? 'فرمت فایل خروجی' : 'OUTPUT FORMAT'}
             </label>
-            <div className="tts-format-options">
-              <button type="button" className="is-selected" disabled>
-                WAV
-              </button>
+            <div className="tts-format-summary">
+              <span>WAV</span>
+              <small>{fa ? 'فایل صوتی با کیفیت اصلی' : 'Original quality audio'}</small>
             </div>
             <button
               type="button"
@@ -686,7 +752,7 @@ function TTSStudio() {
                 !text.trim()
               }
             >
-              <span>♫</span>
+              <span aria-hidden="true">{generating ? <LoaderCircle className="tts-spinner" size={20} /> : <AudioLines size={20} />}</span>
               {generating
                 ? (fa ? 'در حال تولید صدا...' : 'Generating audio...')
                 : (fa ? 'تولید صدا' : 'Generate speech')}
@@ -701,7 +767,7 @@ function TTSStudio() {
             <p className="tts-development-note">
               {textLanguage === 'fa'
                 ? 'موتور فعلی از متن فارسی پشتیبانی نمی‌کند؛ انگلیسی را انتخاب کن.'
-                : 'English text only. Voice: Alba and other available voices.'}
+                : (fa ? 'متن انگلیسی را وارد کن و گوینده را انتخاب کن.' : 'Enter English text and choose a voice.')}
             </p>
           </section>
         </div>
@@ -709,7 +775,7 @@ function TTSStudio() {
         <section className="tts-panel tts-output-panel">
           <div className="tts-panel-heading">
             <div>
-              <span className="tts-step">{fa ? 'مرحله ۰۳' : 'STEP 03'}</span>
+              <span className="tts-step">{fa ? 'مرحلهٔ سوم' : 'STEP 03'}</span>
               <h2>{fa ? 'خروجی صوتی' : 'Audio output'}</h2>
             </div>
             <span className="tts-output-empty">{generating
@@ -746,12 +812,13 @@ function TTSStudio() {
                 Your browser does not support audio playback.
               </audio>
               <a href={audioUrl} download={generatedFilename}>
+                <Download size={17} aria-hidden="true" />
                 {fa ? 'دانلود فایل WAV' : 'Download WAV'}
               </a>
             </div>
           ) : (
             <div className="tts-output-placeholder">
-              <div className="tts-output-icon">♫</div>
+              <div className="tts-output-icon"><Headphones size={24} aria-hidden="true" /></div>
               <strong>
                 {fa ? 'صدای تولیدشده اینجا نمایش داده می‌شود' : 'Your generated audio will appear here'}
               </strong>
