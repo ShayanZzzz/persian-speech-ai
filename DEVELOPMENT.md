@@ -207,22 +207,30 @@ paths in the repository before editing.
   tracks the matching project update. No deployment was performed. Blender,
   workshop images, backups, and unrelated local media were excluded from commits.
 
-### Subtitle studio automatic generation (2026-11-17)
+### Subtitle studio automatic generation (2026-11-19)
 
 - VideoEditor reads the STT catalog from `/models` and sends video, model and
   language to `/transcribe` with existing bearer/cookie authentication. Timed
   segments populate the timeline; cancellation and failures preserve existing
   edits. Re-generation appends unless replacement is explicitly selected.
 - A large transcript workspace edits the same state as preview and subtitle
-  exports. Optional word probabilities below 0.6 receive red review hints;
-  current inference does not yet provide these scores.
+  exports. The transcript is editable by segment. If word confidence data is
+  supplied, words below 0.6 are marked red and can be filtered for review.
+  Editing a segment clears its old word-confidence data so stale highlights are
+  not shown.
+- Current `/transcribe` inference does not request word timestamps and returns
+  no per-word probabilities, so those red hints do not yet appear for normal
+  generated output. Do not infer word-level uncertainty from a segment score.
 - Video filters, brightness and contrast affect preview only; MP4 rendering
   remains unchanged. Preview settings are recorded in project JSON.
 - Copied the verified changes into the main frontend served on localhost:5174.
   The preceding preview QA used synthetic speech and real `/transcribe` through
   port 5175, confirming timed generation and synchronized text editing.
+- Delivered in [commit e5e8546](https://github.com/ShayanZzzz/persian-speech-ai/commit/e5e8546),
+  pushed to `main` on 2026-11-19. A delivery note is in
+  `docs/updates/2026-11-19-negar-subtitle-studio.md`.
 
-### Shared studio selector (2026-11-17)
+### Shared studio selector (2026-11-19)
 
 - `frontend/src/components/StudioSelect.tsx` and `StudioSelect.css` own the
   reusable content-sized dropdown, based on the STT Whisper selector. Props:
@@ -481,6 +489,11 @@ These items are separate from the current custom voice-profile task:
     browser; a successful frontend build is not sufficient.
 -   Investigate the dashboard three-dot export menu's partial visibility
     / horizontal-scroll issue.
+-   Extend `/transcribe` with aligned word-level timing and confidence data;
+    mark uncertain words red inside the transcript editor and let users replace
+    them directly. Keep corrections synchronized with segment text, preview,
+    and exports. Current editing is per segment; word-level review is not yet
+    backed by inference data or inline word editing.
 - Update this handoff document whenever verified implementation status or architecture decisions change.
 
 ## 9. Data and deployment decisions to preserve
